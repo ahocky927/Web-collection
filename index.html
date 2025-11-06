@@ -443,7 +443,7 @@
                     <button id="fullscreen-copy-btn" class="code-control-btn">
                         <i class="fa fa-clone"></i>
                     </button>
-                    <button id="close-fullscreen-btn" class="code-control-btn hover:text-red-500 dark:hover:text-red-400">
+                    <button id="close-fullscreen-btn" class="code-control-btn hover:text-red-400 dark:hover:text-red-400">
                         <i class="fa fa-compress"></i>
                     </button>
                 </div>
@@ -1111,13 +1111,13 @@
                                         <i class="fa fa-ellipsis-v"></i>
                                     </button>
                                     <div class="web-actions-dropdown absolute right-0 mt-2 w-48 bg-neutral-50 dark:bg-neutral-700 rounded-lg shadow-lg py-2 hidden animate-fade-in z-20">
-                                        <button class="preview-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                        <button class="preview-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors flex items-center gap-2" data-id="${web.id}">
                                             <i class="fa fa-eye"></i> 预览
                                         </button>
-                                        <button class="edit-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                        <button class="edit-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors flex items-center gap-2" data-id="${web.id}">
                                             <i class="fa fa-pencil"></i> 编辑
                                         </button>
-                                        <button class="delete-web-btn w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                        <button class="delete-web-btn w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-800 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2" data-id="${web.id}">
                                             <i class="fa fa-trash"></i> 删除
                                         </button>
                                     </div>
@@ -1319,7 +1319,7 @@
                 }
             },
             
-            // 渲染所有标签（管理标签模态框 - 代码不变）
+            // 渲染所有标签（管理标签模态框）
             renderAllTags() {
                 const allTagsContainer = document.getElementById('all-tags-container');
                 const allTags = TagStorage.getAllTags();
@@ -1339,11 +1339,11 @@
                     const usageCount = allWebs.filter(web => web.tags && web.tags.includes(tag.id)).length;
                     
                     const tagElement = document.createElement('div');
-                    tagElement.className = 'flex items-center gap-2 bg-neutral-100 dark:bg-neutral-700 rounded-full px-3 py-1.5';
+                    tagElement.className = 'flex items-center gap-2 bg-primary opacity-40 dark:bg-neutral-600 rounded-full px-3 py-1.5';
                     tagElement.innerHTML = `
                         <span class="text-sm">${tag.name}</span>
-                        <span class="text-xs bg-neutral-200 dark:bg-neutral-600 text-neutral-600 dark:text-neutral-300 rounded-full px-1.5">${usageCount}</span>
-                        <button class="delete-tag-btn text-neutral-400 hover:text-red-500 transition-colors" data-id="${tag.id}">
+                        <span class="text-xs bg-neutral-100 dark:bg-neutral-500 text-neutral-600 dark:text-neutral-100 rounded-full px-1.5">${usageCount}</span>
+                        <button class="delete-tag-btn text-neutral-500 dark:text-neutral-300 hover:text-red-400 dark:hover:text-red-500 transition-colors" data-id="${tag.id}">
                             <i class="fa fa-times"></i>
                         </button>
                     `;
@@ -1752,26 +1752,92 @@
                 this.refreshAllUI(); // 刷新 UI，更新高亮和批量操作栏
             },
             
+            // 【新增】退出批量编辑模式的辅助函数
+
+            exitBulkEditMode() {
+
+                this.state.isBulkEditMode = false;
+
+                this.state.selectedWebIds = [];
+
+                // 确保UI完全更新，包括按钮样式
+
+                this.refreshAllUI();
+
+                // 强制更新批量编辑按钮的图标状态
+
+                const toggleBulkEditBtn = document.getElementById('toggle-bulk-edit-btn');
+
+                if (toggleBulkEditBtn) {
+
+                    const bulkEditBtnIcon = toggleBulkEditBtn.querySelector('i');
+
+                    if (bulkEditBtnIcon) {
+
+                        // 非批量模式: 多选列表图标
+
+                        bulkEditBtnIcon.className = 'fa fa-list-ul text-neutral-700 dark:text-neutral-300';
+
+                    }
+
+                }
+
+            },
+            
             // 【功能 1 - 增强】批量删除逻辑
+
             batchDelete() {
+
                 const ids = this.state.selectedWebIds;
+
                 if (ids.length === 0) return;
 
+
+
                 if (!confirm(`确定要删除选中的 ${ids.length} 个网页吗？此操作不可撤销。`)) {
+
                     return;
+
                 }
+
                 
+
                 const deletedCount = WebStorage.batchDeleteWebs(ids);
+
                 
-                this.state.isBulkEditMode = false; // 退出批量模式
-                this.state.selectedWebIds = [];
-                this.refreshAllUI();
-                
-                if (deletedCount > 0) {
-                    UIRenderer.showToast(`成功删除 ${deletedCount} 个网页`, 'success');
+
+                // 检查删除后是否还有剩余网页
+
+                const remainingWebs = WebStorage.getAllWebs().length;
+
+                if (remainingWebs === 0) {
+
+                    // 如果删除后没有剩余网页，退出批量模式
+
+                    this.exitBulkEditMode();
+
                 } else {
-                    UIRenderer.showToast('没有网页被删除。', 'info');
+
+                    // 如果还有剩余网页，清空已选中的网页，但保持批量模式
+
+                    this.state.selectedWebIds = [];
+
+                    this.refreshAllUI();
+
                 }
+
+                
+
+                if (deletedCount > 0) {
+
+                    UIRenderer.showToast(`成功删除 ${deletedCount} 个网页`, 'success');
+
+                } else {
+
+                    UIRenderer.showToast('没有网页被删除。', 'info');
+
+                }
+
             },
             
             // 【新增】打开批量标签模态框
@@ -2567,17 +2633,41 @@
             
             // 删除网页
             deleteWeb(id) {
+
                 if (!confirm('确定要删除这个网页吗？此操作不可撤销。')) {
+
                     return;
+
                 }
+
                 
+
                 const deleted = WebStorage.deleteWeb(id);
+
                 if (deleted) {
-                    // 关闭模态框并刷新UI
-                    this.closeAllModals();
-                    this.refreshAllUI();
+
+                    // 检查删除后是否还有剩余网页，如果在批量模式下删除了最后一个网页，则退出批量模式
+
+                    const remainingWebs = WebStorage.getAllWebs().length;
+
+                    if (remainingWebs === 0 && this.state.isBulkEditMode) {
+
+                        this.exitBulkEditMode();
+
+                    } else {
+
+                        // 关闭模态框并刷新UI
+
+                        this.closeAllModals();
+
+                        this.refreshAllUI();
+
+                    }
+
                     UIRenderer.showToast('网页已删除');
+
                 }
+
             },
             
             // 导出所有网页
