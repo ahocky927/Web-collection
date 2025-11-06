@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页收藏家</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- 统一的 Tailwind 配置 -->
+    <style>
+     @import url("https://fontsapi.zeoseven.com/806/main/result.css");
+     </style>
+    
+     <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // 【优化：极简 Ins 灰调柔光配色】
+                        primary: '#BDC8DE', // 柔和淡蓝色（强调色）
+                        secondary: '#f8f9fa', // 柔和中灰（辅助色）
+                        neutral: {
+                            100: '#F5F5F5', // 浅色背景 (米白)
+                            200: '#E8E8E8', // 浅色卡片背景 (浅灰)
+                            300: '#D1D5DB', // 边框
+                            400: '#A3A3A3', // 浅文字/占位符
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#383838', // 深色模式卡片背景
+                            900: '#262626', // 深色模式背景 / 浅色模式文字 (深炭灰)
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['NanoMyongWenFangSong', 'Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-in-out',
+                        'pulse-soft': 'pulseSoft 2s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        pulseSoft: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.8' },
+                        },
+                    },
+                    boxShadow: {
+                        // 调整阴影，使其更柔和
+                        'soft': '0 2px 8px rgba(0, 0, 0, 0.05)',
+                        'hover': '0 6px 15px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass-effect {
+                /* 使用更柔和的米白色和深炭灰 */
+                @apply bg-neutral-100 bg-opacity-70 dark:bg-neutral-900 dark:bg-opacity-70 backdrop-blur-md;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-hover hover:-translate-y-1;
+            }
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-2xl shadow-md hover:bg-opacity-90 transition-all duration-300 flex items-center justify-center gap-2;
+            }
+            .btn-secondary {
+                /* 调整圆角 */
+                @apply bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 px-4 py-2 rounded-2xl shadow-soft hover:shadow-md transition-all duration-300 flex items-center justify-center gap-2;
+            }
+            .input-field {
+                /* 调整圆角 */
+                @apply w-full px-2 py-2 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300;
+            }
+            .search-input-field {
+                @apply w-full py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300;
+    /* 搜索框 注意：没有 px-4 */
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .tag {
+                /* 标签使用 primary 颜色，但背景使用 neutral.50 作为卡片背景的对比 */
+                @apply px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-50 text-primary dark:bg-neutral-600 dark:text-neutral-200 cursor-pointer transition-all;
+            }
+            .tag-active {
+                @apply bg-primary text-white;
+            }
+            .fullscreen-backdrop {
+                @apply fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4;
+            }
+            .fullscreen-content {
+                /* 调整圆角 */
+                @apply bg-white dark:bg-neutral-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-slide-up;
+            }
+            .code-fullscreen-btn {
+                @apply absolute bottom-3 right-3 text-neutral-500 hover:text-primary transition-colors p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700;
+            }
+
+            /* 【优化】自定义下拉菜单向上弹出样式 */
+            .dropdown-up {
+                @apply bottom-full mb-2 mt-0;
+            }
+            
+            /* 【新增】批量编辑悬浮栏样式 */
+            .bulk-edit-bar {
+                /* 修复 BUG 1：默认隐藏在屏幕下方 */
+                @apply fixed bottom-0 left-0 right-0 z-50 bg-primary shadow-lg transition-all duration-300 transform translate-y-full;
+            }
+            .bulk-edit-bar.active {
+                /* 修复 BUG 1：激活时向上移动到屏幕内 */
+                @apply translate-y-0;
+            }
+            
+            /* 【新增】代码全屏模式的样式 - 修正：删除绝对定位以避免与 Tab 按钮重叠 */
+            .code-controls {
+                @apply p-1 flex gap-1 z-10; /* 仅保留样式，移除 absolute top-0 right-0 */
+            }
+            .code-control-btn {
+                @apply p-2 rounded-full text-neutral-500 hover:text-primary hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-50 glass-effect border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-bookmark text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">网页收藏家</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- 【新增】批量编辑按钮 (修复 BUG 3) -->
+                <button id="toggle-bulk-edit-btn" class="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                    <i class="fa fa-check-square-o text-neutral-700 dark:text-neutral-300"></i>
+                </button>
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+                    <i class="fa fa-moon-o dark:hidden text-neutral-700"></i>
+                    <i class="fa fa-sun-o hidden dark:block text-white-300"></i>
+                </button>
+                <button id="add-web-btn" class="btn-primary">
+                    <i class="fa fa-plus"></i>
+                    <span>添加网页</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 搜索和标签筛选区 -->
+    <div class="sticky top-[61px] z-40 glass-effect border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
+        <div class="container mx-auto px-4 py-3">
+            <!-- 搜索框 -->
+            <div class="relative mb-3">
+                <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 z-20"></i>
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    class="search-input-field pl-12 pr-4 py-2.5" 
+                    placeholder="搜索网页标题、备注或标签..."
+                >
+                <button id="clear-search" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hidden">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- 标签筛选 -->
+            <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+                <!-- 【修复 P3】为“全部”按钮添加 ID/事件绑定，并移除 tag-active 初始类，让 JS 统一管理 -->
+                <button id="all-tag-button" class="tag" data-tag="all">全部</button>
+                <div id="tags-container" class="flex items-center gap-2">
+                    <!-- 标签将通过 JavaScript 动态生成 -->
+                </div>
+                <button id="manage-tags-btn" class="tag hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400">
+                    <i class="fa fa-plus"></i> 管理标签
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <!-- 【优化 1】为 main 添加 pb-16 留出底部操作栏的空间 -->
+    <main class="container mx-auto px-4 py-6 pb-16">
+        <!-- 空状态提示 -->
+        <div id="empty-state" class="flex flex-col items-center justify-center py-16 animate-fade-in">
+            <div class="w-24 h-24 rounded-full bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                <i class="fa fa-folder-open text-primary text-4xl"></i>
+            </div>
+            <h2 class="text-xl font-semibold mb-2">还没有收藏任何网页</h2>
+            <p class="text-neutral-500 dark:text-neutral-400 text-center max-w-md mb-6">点击右上角的 "+" 按钮开始添加你的第一个网页收藏吧！</p>
+            <button id="empty-add-btn" class="btn-primary">
+                <i class="fa fa-plus"></i>
+                <span>添加第一个网页</span>
+            </button>
+        </div>
+
+        <!-- 收藏列表 -->
+        <div id="collection-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 hidden auto-rows-min items-start">
+            <!-- 收藏卡片将通过 JavaScript 动态生成 -->
+        </div>
+
+        <!-- 搜索无结果状态 -->
+        <div id="search-no-result" class="flex flex-col items-center justify-center py-16 animate-fade-in hidden">
+            <div class="w-24 h-24 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                <i class="fa fa-search text-neutral-400 text-4xl"></i>
+            </div>
+            <h2 class="text-xl font-semibold mb-2">没有找到匹配的网页</h2>
+            <p class="text-neutral-500 dark:text-neutral-400 text-center max-w-md mb-6">尝试使用其他关键词或标签进行搜索</p>
+            <button id="clear-search-btn" class="btn-secondary">
+                <i class="fa fa-times"></i>
+                <span>清除搜索</span>
+            </button>
+        </div>
+    </main>
+    
+    <!-- 【新增】批量操作悬浮栏 -->
+    <div id="bulk-edit-bar" class="bulk-edit-bar text-white py-3 px-4">
+        <div class="container mx-auto flex items-center justify-between">
+            <span id="bulk-selected-count" class="font-semibold">已选 0 项</span>
+            <div class="flex items-center gap-3">
+                <button id="batch-tag-btn" class="btn-secondary bg-primary-dark text-white text-sm border-white border-opacity-30 hover:bg-opacity-80">
+                    <i class="fa fa-tags"></i>
+                    <span>批量标签</span>
+                </button>
+                <button id="batch-delete-btn" class="btn-secondary bg-red-500 text-white text-sm border-red-400 border-opacity-50 hover:bg-red-400">
+                    <i class="fa fa-trash"></i>
+                    <span>批量删除</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <footer id="main-footer" class="fixed bottom-0 left-0 right-0 glass-effect border-t border-neutral-200 dark:border-neutral-800 py-3 px-4 z-40">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="text-sm text-neutral-500 dark:text-neutral-400">
+                <span id="item-count">0</span> 个网页收藏
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="export-all-btn" class="btn-secondary text-sm">
+                    <i class="fa fa-download"></i>
+                    <span>导出全部</span>
+                </button>
+                <button id="import-btn" class="btn-secondary text-sm">
+                    <i class="fa fa-upload"></i>
+                    <span>导入</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 添加网页模态框 -->
+    <div id="add-web-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full max-w-lg mx-4 animate-slide-up overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">添加新网页</h2>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="web-title" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">网页标题</label>
+                    <input type="text" id="web-title" class="input-field" placeholder="给这个网页起个名字">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="web-description" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">备注 (可选)</label>
+                    <textarea id="web-description" class="input-field" rows="2" placeholder="添加一些备注信息..."></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">标签 (可选)</label>
+                    <div class="flex flex-wrap gap-2 mb-2" id="add-tags-container">
+                        <!-- 选中的标签将在这里显示 -->
+                    </div>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="web-tags-input" 
+                            class="input-field" 
+                            placeholder="输入标签，按回车添加"
+                        >
+                        <div id="tags-suggestions" class="absolute left-4 right-0 top-full mt-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 max-h-40 overflow-y-auto scrollbar-hide hidden z-10">
+                            <!-- 标签建议将通过 JavaScript 动态生成 -->
+                        </div>
+                    </div>
+                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">多个标签用回车分隔</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">上传方式</label>
+                    <div class="flex gap-3 mb-3">
+                        <button id="upload-file-tab" class="flex-1 py-2 rounded-lg bg-primary text-white">文件上传</button>
+                        <button id="paste-code-tab" class="flex-1 py-2 rounded-lg bg-neutral-200 dark:bg-neutral-700">代码粘贴</button>
+                    </div>
+                    
+                    <!-- 文件上传区域 -->
+                    <div id="file-upload-area" class="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                        <input type="file" id="html-file-input" accept=".html" class="hidden">
+                        <i class="fa fa-file-text-o text-neutral-400 text-3xl mb-2"></i>
+                        <p class="text-sm text-neutral-500 dark:text-neutral-400">点击或拖拽 HTML 文件到这里</p>
+                        <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">支持 .html 格式文件</p>
+                    </div>
+                    
+                    <!-- 代码粘贴区域 -->
+                    <div id="code-paste-area" class="hidden">
+                        <textarea id="html-code-input" class="input-field" rows="6" placeholder="粘贴完整的 HTML 代码（包含 &lt;html&gt; 标签）"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button class="close-modal btn-secondary">取消</button>
+                    <button id="save-web-btn" class="btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑网页模态框 -->
+    <div id="edit-web-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full max-w-lg mx-4 animate-slide-up overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">编辑网页</h2>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <input type="hidden" id="edit-web-id">
+                
+                <div class="mb-4">
+                    <label for="edit-web-title" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">网页标题</label>
+                    <input type="text" id="edit-web-title" class="input-field" placeholder="给这个网页起个名字">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit-web-description" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">备注 (可选)</label>
+                    <textarea id="edit-web-description" class="input-field" rows="2" placeholder="添加一些备注信息..."></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">标签 (可选)</label>
+                    <div class="flex flex-wrap gap-2 mb-2" id="edit-tags-container">
+                        <!-- 选中的标签将在这里显示 -->
+                    </div>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="edit-web-tags-input" 
+                            class="input-field" 
+                            placeholder="输入标签，按回车添加"
+                        >
+                        <div id="edit-tags-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 max-h-40 overflow-y-auto scrollbar-hide hidden z-10">
+                            <!-- 标签建议将通过 JavaScript 动态生成 -->
+                        </div>
+                    </div>
+                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">多个标签用回车分隔</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">HTML 代码</label>
+                    
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex gap-3">
+                            <button id="view-code-tab" class="py-2 rounded-lg w-28 bg-primary text-white">查看代码</button>
+                            <button id="edit-code-tab" class="py-2 rounded-lg w-28 bg-neutral-200 dark:bg-neutral-700">编辑代码</button>
+                        </div>
+                        
+                        <div class="code-controls"> 
+                            <button id="undo-code-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
+                                <i class="fa fa-undo"></i>
+                            </button>
+                            <button id="redo-code-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
+                                <i class="fa fa-repeat"></i>
+                            <button id="copy-code-btn" class="code-control-btn">
+                                <i class="fa fa-clone"></i>
+                            </button>
+                            </button>
+                            <button id="fullscreen-code-btn" class="code-control-btn">
+                                <i class="fa fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 代码查看区域 -->
+                    <div id="code-view-area" class="bg-neutral-100 dark:bg-neutral-900 rounded-lg p-4 h-40 overflow-y-auto font-mono text-sm whitespace-pre-wrap">
+                        <!-- 代码将通过 JavaScript 动态插入 -->
+                    </div>
+                    
+                    <!-- 代码编辑区域 -->
+                    <div id="code-edit-area" class="relative hidden">
+                        <textarea id="edit-html-code-input" class="input-field" rows="6" placeholder="编辑 HTML 代码..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button id="delete-web-btn" class="btn-secondary text-red-500">
+                        <span>删除</span>
+                    </button>
+                    <button class="close-modal btn-secondary">取消</button>
+                    <button id="update-web-btn" class="btn-primary">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 【新增】全屏代码编辑/查看模态框 -->
+    <div id="code-fullscreen-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-none shadow-lg w-full h-full animate-slide-up overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between bg-white dark:bg-neutral-800">
+                <h2 id="fullscreen-code-title" class="text-lg font-bold text-neutral-900 dark:text-neutral-100"></h2>
+                <div class="flex items-center gap-2">
+                    <button id="fullscreen-undo-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
+                        <i class="fa fa-undo"></i>
+                    </button>
+                    <button id="fullscreen-redo-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
+                        <i class="fa fa-repeat"></i>
+                    </button>
+                    <button id="fullscreen-copy-btn" class="code-control-btn">
+                        <i class="fa fa-clone"></i>
+                    </button>
+                    <button id="close-fullscreen-btn" class="code-control-btn hover:text-red-500 dark:hover:text-red-400">
+                        <i class="fa fa-compress"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="fullscreen-code-content" class="flex-1 relative">
+                <div id="fullscreen-code-view" class="w-full h-full p-4 overflow-y-auto font-mono text-sm whitespace-pre-wrap bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100">
+                    </div>
+                <div id="fullscreen-code-edit" class="w-full h-full hidden">
+                    <textarea id="fullscreen-html-code-input" class="w-full h-full bg-neutral-100 dark:bg-neutral-900 border-0 p-4 font-mono text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none" placeholder="编辑 HTML 代码..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理标签模态框 -->
+    <div id="manage-tags-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full max-w-lg mx-4 animate-slide-up overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">管理标签</h2>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="new-tag-input" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">添加新标签</label>
+                    <div class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="new-tag-input" 
+                            class="input-field" 
+                            placeholder="输入新标签名称"
+                        >
+                        <button id="add-tag-btn" class="btn-primary whitespace-nowrap">
+                            <i class="fa fa-plus"></i> 添加
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">现有标签</label>
+                    <div id="all-tags-container" class="flex flex-wrap gap-2 max-h-60 overflow-y-auto pr-2">
+                        <!-- 所有标签将通过 JavaScript 动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button class="close-modal btn-secondary">完成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 【新增】批量标签模态框 -->
+    <div id="batch-tag-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full max-w-lg mx-4 animate-slide-up overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">批量编辑标签 (<span id="batch-count-display">0</span> 项)</h2>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200" data-modal-id="batch-tag-modal">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- 批量添加标签 -->
+                <div class="mb-6 border-b pb-4 border-neutral-200 dark:border-neutral-700">
+                    <label class="block text-sm font-bold text-primary dark:text-primary mb-2 flex items-center gap-2">
+                        <i class="fa fa-plus-circle"></i> 批量添加标签
+                    </label>
+                    <div class="flex flex-wrap gap-2 mb-2" id="batch-add-tags-container">
+                        <!-- 待添加的标签将在这里显示 -->
+                    </div>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="batch-add-tags-input" 
+                            class="input-field" 
+                            placeholder="输入要添加的标签 (按回车添加)"
+                        >
+                        <div id="batch-add-tags-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 max-h-40 overflow-y-auto scrollbar-hide hidden z-10">
+                            <!-- 标签建议将通过 JavaScript 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 批量移除标签 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-red-500 dark:text-red-400 mb-2 flex items-center gap-2">
+                        <i class="fa fa-minus-circle"></i> 批量移除标签 (点击选择要移除的共同标签)
+                    </label>
+                    <div id="batch-remove-tags-container" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2">
+                        <!-- 共同标签将通过 JavaScript 动态生成 -->
+                        <p class="text-neutral-500 text-sm">正在计算共同标签...</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button class="close-modal btn-secondary" data-modal-id="batch-tag-modal">取消</button>
+                    <button id="confirm-batch-tag-btn" class="btn-primary">应用操作</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 网页预览模态框 -->
+    <div id="preview-web-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full h-full max-w-5xl max-h-[90vh] mx-4 animate-slide-up overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                <h2 id="preview-web-title" class="font-bold truncate"></h2>
+                <div class="flex items-center gap-2">
+                    <button id="open-in-new-tab" class="p-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+                        <i class="fa fa-external-link"></i>
+                    </button>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <iframe id="web-preview-iframe" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入< -->
+    <div id="import-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden animate-fade-in">
+        <div class="bg-white dark:bg-neutral-800 rounded-2xl shadow-lg w-full max-w-lg mx-4 animate-slide-up overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold">导入收藏</h2>
+                    <button class="close-modal text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">导入方式</label>
+                    <div class="flex gap-3 mb-3">
+                        <button id="import-file-tab" class="flex-1 py-2 rounded-lg bg-primary text-white">文件导入</button>
+                        <button id="import-code-tab" class="flex-1 py-2 rounded-lg bg-neutral-200 dark:bg-neutral-700">代码导入</button>
+                    </div>
+                    
+                    <!-- 文件导入区域 -->
+                    <div id="file-import-area" class="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
+                        <input type="file" id="backup-file-input" accept=".json" class="hidden">
+                        <i class="fa fa-file-text-o text-neutral-400 text-3xl mb-2"></i>
+                        <p class="text-sm text-neutral-500 dark:text-neutral-400">点击或拖拽备份文件到这里</p>
+                        <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">支持 .json 格式的备份文件</p>
+                    </div>
+                    
+                    <!-- 代码导入区域 -->
+                    <div id="code-import-area" class="hidden">
+                        <textarea id="backup-code-input" class="input-field" rows="6" placeholder="粘贴备份代码..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button class="close-modal btn-secondary">取消</button>
+                    <button id="confirm-import-btn" class="btn-primary">导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息组件 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 bg-white dark:bg-neutral-800 shadow-lg rounded-lg px-4 py-3 flex items-center gap-3 transform translate-x-full transition-transform duration-300 opacity-0">
+        <div id="toast-icon" class="w-6 h-6 rounded-full flex items-center justify-center">
+            <i id="toast-icon-i" class="fa"></i>
+        </div>
+        <div id="toast-message" class="text-sm font-medium"></div>
+    </div>
+
+    <script>
+        // 【新增】自定义时间格式化函数，用于导入标记
+        const formatTimeForImportMark = (isoString) => {
+            if (!isoString) return '';
+            const date = new Date(isoString);
+            // 格式化为 YYYY/MM/DD HH:MM
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(/[ ]/g, '/'); // 将空格替换为斜杠，使标记更紧凑
+        };
+        
+        // 标签存储模块
+        const TagStorage = {
+            // 存储键名
+            STORAGE_KEY: 'web_collector_tags',
+            
+            // 获取所有标签
+            getAllTags() {
+                const stored = localStorage.getItem(this.STORAGE_KEY);
+                return stored ? JSON.parse(stored) : [];
+            },
+            
+            // 添加新标签
+            addTag(tagName) {
+                // 标准化标签名称（小写，去空格）
+                const trimmedName = tagName.trim();
+                if (!trimmedName) return null;
+
+                const normalizedName = trimmedName.toLowerCase();
+                
+                const tags = this.getAllTags();
+                
+                // 检查标签是否已存在 (忽略大小写)
+                if (tags.some(tag => tag.name.toLowerCase() === normalizedName)) {
+                    return null; // 标签已存在
+                }
+                
+                const newTag = {
+                    id: Date.now().toString(),
+                    name: trimmedName, // 保存原始大小写
+                    createdAt: new Date().toISOString()
+                };
+                
+                tags.push(newTag);
+                // 【优化 A 准备】错误处理
+                try {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tags));
+                } catch (e) {
+                    UIRenderer.showToast('标签存储失败，可能空间不足或处于隐私模式。', 'error');
+                }
+                return newTag;
+            },
+            
+            // 删除标签
+            deleteTag(tagId) {
+                const tags = this.getAllTags();
+                const index = tags.findIndex(tag => tag.id === tagId);
+                
+                if (index !== -1) {
+                    const deleted = tags.splice(index, 1);
+                    // 【优化 A 准备】错误处理
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tags));
+                        
+                        // 同时从所有网页中移除该标签
+                        const webs = WebStorage.getAllWebs();
+                        const deletedTagId = deleted[0].id; // 确保使用删除的标签ID
+                        const updatedWebs = webs.map(web => {
+                            if (web.tags && web.tags.length) {
+                                return {
+                                    ...web,
+                                    tags: web.tags.filter(id => id !== deletedTagId)
+                                };
+                            }
+                            return web;
+                        });
+                        
+                        localStorage.setItem(WebStorage.STORAGE_KEY, JSON.stringify(updatedWebs));
+                    } catch (e) {
+                        UIRenderer.showToast('标签/网页存储失败，可能空间不足或处于隐私模式。', 'error');
+                        return null; // 阻止返回 deleted[0]
+                    }
+                    return deleted[0];
+                }
+                
+                return null;
+            },
+            
+            // 通过ID获取标签
+            getTagById(tagId) {
+                const tags = this.getAllTags();
+                return tags.find(tag => tag.id === tagId);
+            },
+            
+            // 通过ID列表获取标签名称列表
+            getTagNamesByTagIds(tagIds) {
+                if (!tagIds || !tagIds.length) return [];
+                
+                const tags = this.getAllTags();
+                return tagIds.map(tagId => {
+                    const tag = tags.find(t => t.id === tagId);
+                    return tag ? tag.name : null;
+                }).filter(Boolean);
+            },
+            
+            // 从网页集合中提取所有使用的标签ID
+            getUsedTagIdsFromWebs(webs) {
+                const tagIds = new Set();
+                
+                webs.forEach(web => {
+                    if (web.tags && web.tags.length) {
+                        web.tags.forEach(tagId => tagIds.add(tagId));
+                    }
+                });
+                
+                return Array.from(tagIds);
+            }
+        };
+
+        // 数据存储模块
+        const WebStorage = {
+            // 存储键名
+            STORAGE_KEY: 'web_collector_items',
+            
+            // 获取所有收藏的网页
+            getAllWebs() {
+                const stored = localStorage.getItem(this.STORAGE_KEY);
+                return stored ? JSON.parse(stored) : [];
+            },
+            
+            // 获取单个网页
+            getWebById(id) {
+                const webs = this.getAllWebs();
+                return webs.find(web => web.id === id);
+            },
+            
+            // 添加新网页
+            addWeb(web) {
+                const webs = this.getAllWebs();
+                const newWeb = {
+                    id: Date.now().toString(),
+                    title: web.title,
+                    description: web.description,
+                    htmlContent: web.htmlContent,
+                    tags: web.tags || [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                webs.push(newWeb);
+                // 【优化 A 准备】错误处理
+                try {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(webs));
+                } catch (e) {
+                    UIRenderer.showToast('网页存储失败，可能空间不足或处于隐私模式。', 'error');
+                }
+                return newWeb;
+            },
+            
+            // 更新网页
+            updateWeb(id, updatedWeb) {
+                const webs = this.getAllWebs();
+                const index = webs.findIndex(web => web.id === id);
+                if (index !== -1) {
+                    webs[index] = {
+                        ...webs[index],
+                        ...updatedWeb,
+                        updatedAt: new Date().toISOString()
+                    };
+                    // 【优化 A 准备】错误处理
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(webs));
+                    } catch (e) {
+                        UIRenderer.showToast('网页更新失败，可能空间不足或处于隐私模式。', 'error');
+                        return null;
+                    }
+                    return webs[index];
+                }
+                return null;
+            },
+            
+            // 删除网页
+            deleteWeb(id) {
+                const webs = this.getAllWebs();
+                const index = webs.findIndex(web => web.id === id);
+                if (index !== -1) {
+                    const deleted = webs.splice(index, 1);
+                    // 【优化 A 准备】错误处理
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(webs));
+                    } catch (e) {
+                        UIRenderer.showToast('网页删除失败，可能空间不足或处于隐私模式。', 'error');
+                        return null;
+                    }
+                    return deleted[0];
+                }
+                return null;
+            },
+            
+            // 批量删除多个网页
+            batchDeleteWebs(ids) {
+                const webs = this.getAllWebs();
+                const initialLength = webs.length;
+                
+                const updatedWebs = webs.filter(web => !ids.includes(web.id));
+                const deletedCount = initialLength - updatedWebs.length;
+
+                if (deletedCount > 0) {
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedWebs));
+                        return deletedCount;
+                    } catch (e) {
+                        UIRenderer.showToast('批量删除后存储失败，可能空间不足。', 'error');
+                        return 0;
+                    }
+                }
+                return 0;
+            },
+            
+            // 【新增】批量更新标签的核心逻辑
+            batchUpdateTags(idsToUpdate, tagsToAdd, tagsToRemove) {
+                const webs = this.getAllWebs();
+                let tagsModifiedCount = 0;
+
+                const updatedWebs = webs.map(web => {
+                    if (idsToUpdate.includes(web.id)) {
+                        let currentTags = new Set(web.tags);
+                        let modified = false;
+                        
+                        // 1. 批量添加逻辑
+                        tagsToAdd.forEach(tagId => {
+                            if (!currentTags.has(tagId)) {
+                                currentTags.add(tagId);
+                                modified = true;
+                            }
+                        });
+                        
+                        // 2. 批量移除逻辑
+                        tagsToRemove.forEach(tagId => {
+                            if (currentTags.has(tagId)) {
+                                currentTags.delete(tagId);
+                                modified = true;
+                            }
+                        });
+                        
+                        if (modified) {
+                            tagsModifiedCount++;
+                            return {
+                                ...web,
+                                tags: Array.from(currentTags),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
+                    }
+                    return web; // 非选中或未修改的网页保持不变
+                });
+
+                if (tagsModifiedCount > 0) {
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedWebs));
+                        return tagsModifiedCount;
+                    } catch (e) {
+                        UIRenderer.showToast('批量标签操作后存储失败，可能空间不足。', 'error');
+                        return 0;
+                    }
+                }
+                return 0;
+            },
+
+
+            // 导出所有网页
+            exportAllWebs() {
+                const webs = this.getAllWebs();
+                const tags = TagStorage.getAllTags();
+                const backupData = {
+                    type: 'web_collector_backup',
+                    version: '2.0',
+                    createdAt: new Date().toISOString(),
+                    items: webs,
+                    tags: tags
+                };
+                return JSON.stringify(backupData, null, 2);
+            },
+            
+            // 导入网页
+            importWebs(backupData) {
+                try {
+                    const data = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
+                    
+                    // 验证备份数据格式
+                    if (data.type !== 'web_collector_backup' || !Array.isArray(data.items)) {
+                        throw new Error('无效的备份数据格式');
+                    }
+                    
+                    // 导入标签（如果有）
+                    if (Array.isArray(data.tags)) {
+                        const existingTags = TagStorage.getAllTags().map(t => t.name.toLowerCase());
+                        let tagsImportedCount = 0;
+                        data.tags.forEach(tag => {
+                            // 尝试以原始名称添加，如果名称不存在则添加
+                            if (!existingTags.includes(tag.name.toLowerCase())) {
+                                TagStorage.addTag(tag.name);
+                                tagsImportedCount++;
+                            }
+                        });
+                    }
+                    
+                    // 保存现有数据
+                    const existingWebs = this.getAllWebs();
+
+                    
+                    // 添加新数据（避免ID冲突）
+                    let newWebsCount = 0;
+                    const newWebs = data.items.map(web => {
+                        // 检查 ID 是否已存在
+                        const idExists = existingWebs.some(existing => existing.id === web.id);
+                        
+                        // 【优化 3】确定新标题：如果ID冲突，则添加 "备份" 标记和备份时的更新时间
+                        const backupTimeSuffix = formatTimeForImportMark(web.updatedAt); // <-- 获取备份时间戳
+                        const newTitle = idExists
+                            ? `${web.title} (备份: ${backupTimeSuffix})` // <-- 使用备份时间戳
+                            : web.title;
+                        
+                        // 处理标签映射（如果标签ID不存在，尝试通过名称匹配）
+                        let mappedTags = [];
+                        if (web.tags && web.tags.length) {
+                            const allTags = TagStorage.getAllTags();
+                            mappedTags = web.tags.map(tagId => {
+                                // 查找相同ID的标签
+                                let tag = allTags.find(t => t.id === tagId);
+                                
+                                // 如果没找到，尝试通过名称查找
+                                if (!tag && data.tags) {
+                                    const originalTag = data.tags.find(t => t.id === tagId);
+                                    if (originalTag) {
+                                        // 匹配标签名称（不区分大小写）
+                                        tag = allTags.find(t => t.name.toLowerCase() === originalTag.name.toLowerCase());
+                                    }
+                                }
+                                
+                                return tag ? tag.id : null;
+                            }).filter(Boolean);
+                        }
+                        
+                        // 检查网页是否重复（通过标题和内容简单判断）
+                        // 注意：这里需要使用原始标题进行去重，避免标记影响判断
+                        const isDuplicate = existingWebs.some(existing => 
+                            existing.title === web.title && existing.htmlContent === web.htmlContent
+                        );
+
+                        if (isDuplicate) {
+                            return null; // 跳过重复项
+                        }
+                        
+                        newWebsCount++;
+                        return {
+                            ...web,
+                            title: newTitle, // 使用新生成的标题
+                            id: idExists ? Date.now().toString() + Math.random().toString(36).substr(2, 9) : web.id,
+                            tags: mappedTags,
+                            importedAt: new Date().toISOString()
+                        };
+                    }).filter(Boolean); // 移除跳过的重复项
+                    
+                    // 合并并保存
+                    const mergedWebs = [...existingWebs, ...newWebs];
+                    // 【优化 A 准备】错误处理
+                    try {
+                        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mergedWebs));
+                    } catch (e) {
+                        UIRenderer.showToast('导入后存储数据失败，可能空间不足或处于隐私模式。', 'error');
+                    }
+                    
+                    return newWebsCount;
+                } catch (error) {
+                    console.error('导入失败:', error);
+                    throw error;
+                }
+            },
+            
+            // 根据搜索词和标签筛选网页
+            filterWebs(searchTerm, tagId) {
+                const webs = this.getAllWebs();
+                let filtered = [...webs];
+                
+                // 应用标签筛选
+                if (tagId && tagId !== 'all') {
+                    filtered = filtered.filter(web => web.tags && web.tags.includes(tagId));
+                }
+                
+                // 应用搜索筛选
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    filtered = filtered.filter(web => {
+                        // 搜索标题
+                        if (web.title.toLowerCase().includes(term)) return true;
+                        
+                        // 搜索描述
+                        if (web.description && web.description.toLowerCase().includes(term)) return true;
+                        
+                        // 搜索标签
+                        const tagNames = TagStorage.getTagNamesByTagIds(web.tags);
+                        return tagNames.some(name => name.toLowerCase().includes(term));
+                    });
+                }
+                
+                return filtered;
+            }
+        };
+
+        // UI 渲染模块
+        const UIRenderer = {
+            // 渲染收藏列表
+            renderCollectionList(searchTerm = '', activeTagId = 'all') {
+                const filteredWebs = WebStorage.filterWebs(searchTerm, activeTagId);
+                const collectionList = document.getElementById('collection-list');
+                const emptyState = document.getElementById('empty-state');
+                const searchNoResult = document.getElementById('search-no-result');
+                const itemCount = document.getElementById('item-count');
+                const mainFooter = document.getElementById('main-footer');
+                const bulkEditBar = document.getElementById('bulk-edit-bar');
+                
+                // 获取所有网页总数
+                const totalWebs = WebStorage.getAllWebs().length;
+                itemCount.textContent = totalWebs;
+
+                // 【BUG 1 修复】更新底部栏显示状态
+                const isBulkMode = UIManager.state.isBulkEditMode;
+                if (isBulkMode) {
+                    mainFooter.classList.add('hidden');
+                    bulkEditBar.classList.remove('hidden');
+                } else {
+                    mainFooter.classList.remove('hidden');
+                    bulkEditBar.classList.add('hidden');
+                }
+                
+                // 显示/隐藏空状态或无结果状态
+                if (totalWebs === 0) {
+                    collectionList.classList.add('hidden');
+                    searchNoResult.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                
+                if (filteredWebs.length === 0) {
+                    collectionList.classList.add('hidden');
+                    emptyState.classList.add('hidden');
+                    searchNoResult.classList.remove('hidden');
+                    return;
+                }
+                
+                // 总数大于0，且有筛选结果：显示列表，隐藏空状态和无结果
+                collectionList.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                searchNoResult.classList.add('hidden');
+                
+                // 清空列表
+                collectionList.innerHTML = '';
+                
+                // 渲染每个收藏卡片
+                filteredWebs.forEach(web => {
+                    // 获取标签名称
+                    const tagNames = TagStorage.getTagNamesByTagIds(web.tags);
+                    
+                    // 【功能 1 - UI】判断是否选中，添加相应类名
+                    const isSelected = UIManager.state.selectedWebIds.includes(web.id);
+                    const cardClasses = isSelected 
+                        ? 'bg-white dark:bg-neutral-800 rounded-xl shadow-soft card-hover ring-2 ring-primary ring-offset-2 dark:ring-offset-neutral-900'
+                        : 'bg-white dark:bg-neutral-800 rounded-xl shadow-soft card-hover';
+
+                    const bulkModeClasses = isBulkMode ? 'cursor-pointer' : '';
+
+                    const card = document.createElement('div');
+                    card.className = cardClasses + ' ' + bulkModeClasses; // 添加卡片基础样式和多选样式
+                    card.dataset.id = web.id; // 为卡片添加ID以便选择
+                    
+                    // 【BUG 2 修复】移除复选框，仅使用高亮
+                    const checkboxHtml = ''; 
+                    
+                    card.innerHTML = `
+                        ${checkboxHtml}
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-bold text-lg truncate text-neutral-900 dark:text-neutral-100">${web.title}</h3>
+                                <div class="dropdown relative ${isBulkMode ? 'hidden' : ''}"> <!-- 多选模式下隐藏三点操作按钮 -->
+                                    <button class="web-actions-btn p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
+                                        <i class="fa fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="web-actions-dropdown absolute right-0 mt-2 w-48 bg-neutral-50 dark:bg-neutral-700 rounded-lg shadow-lg py-2 hidden animate-fade-in z-20">
+                                        <button class="preview-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                            <i class="fa fa-eye"></i> 预览
+                                        </button>
+                                        <button class="edit-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                            <i class="fa fa-pencil"></i> 编辑
+                                        </button>
+                                        <button class="delete-web-btn w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                            <i class="fa fa-trash"></i> 删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${tagNames.length > 0 ? `
+                                <div class="flex flex-wrap gap-1.5 mb-3">
+                                    ${tagNames.map(name => `<span class="tag">${name}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${web.description ? `<p class="text-neutral-500 dark:text-neutral-400 text-sm mb-4 line-clamp-2">${web.description}</p>` : ''}
+                            
+                            <div class="flex flex-col gap-1">
+                                <!-- 【优化 B】显示创建时间 -->
+                                <span class="text-xs text-neutral-400 dark:text-neutral-500">
+                                    创建: ${new Date(web.createdAt).toLocaleString('zh-CN', { 
+                                        year: 'numeric', 
+                                        month: '2-digit', 
+                                        day: '2-digit', 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    })}
+                                </span>
+                                <div class="flex justify-between items-center">
+                                    <!-- 【优化 2】时间戳增强：显示到分钟 -->
+                                    <span class="text-xs text-neutral-400 dark:text-neutral-500">
+                                        更新: ${new Date(web.updatedAt).toLocaleString('zh-CN', { 
+                                            year: 'numeric', 
+                                            month: '2-digit', 
+                                            day: '2-digit', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}
+                                    </span>
+                                    <button class="open-web-btn btn-primary text-sm py-1.5" data-id="${web.id}">
+                                        <i class="fa fa-external-link"></i>
+                                        <span>打开</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    collectionList.appendChild(card);
+                    
+                    // 【功能 1 - 交互】卡片点击事件 (在多选模式下)
+                    if (isBulkMode) {
+                        card.addEventListener('click', (e) => {
+                            // 检查点击是否发生在非目标元素的可能性
+                            const isActionBtn = e.target.closest('.web-actions-btn');
+                            if (!isActionBtn) {
+                                UIManager.toggleSelectWeb(web.id);
+                            }
+                        });
+                    }
+
+                    // 添加下拉菜单交互 (仅在非多选模式下才绑定)
+                    if (!isBulkMode) {
+                        const actionsBtn = card.querySelector('.web-actions-btn');
+                        const dropdown = card.querySelector('.web-actions-dropdown');
+                        
+                        actionsBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            
+                            // 关闭其他所有下拉菜单
+                            document.querySelectorAll('.web-actions-dropdown').forEach(d => {
+                                if (d !== dropdown) {
+                                    d.classList.add('hidden');
+                                    d.classList.remove('dropdown-up', 'bottom-full', 'mb-2');
+                                    d.classList.add('mt-2');
+                                }
+                            });
+                            
+                            // 切换当前下拉菜单的可见性
+                            dropdown.classList.toggle('hidden');
+
+                            // 【优化 4】下拉菜单智能向上弹出逻辑
+                            if (!dropdown.classList.contains('hidden')) {
+                                const footerRect = mainFooter.getBoundingClientRect();
+                                const footerTop = footerRect.top;
+                                
+                                dropdown.classList.remove('dropdown-up', 'bottom-full', 'mb-2');
+                                dropdown.classList.add('mt-2'); 
+
+                                requestAnimationFrame(() => {
+                                    const rect = dropdown.getBoundingClientRect();
+                                    const dropdownBottom = rect.bottom;
+
+                                    if (dropdownBottom > footerTop - 10) {
+                                        dropdown.classList.add('dropdown-up', 'bottom-full', 'mb-2');
+                                        dropdown.classList.remove('mt-2');
+                                    } else {
+                                        dropdown.classList.remove('dropdown-up', 'bottom-full', 'mb-2');
+                                        dropdown.classList.add('mt-2');
+                                    }
+                                });
+                            } else {
+                                dropdown.classList.remove('dropdown-up', 'bottom-full', 'mb-2');
+                                dropdown.classList.add('mt-2');
+                            }
+                        });
+                        
+                        // 点击卡片外部关闭下拉菜单
+                        document.addEventListener('click', (e) => {
+                            if (dropdown && !dropdown.contains(e.target) && e.target !== actionsBtn) {
+                                dropdown.classList.add('hidden');
+                                dropdown.classList.remove('dropdown-up', 'bottom-full', 'mb-2');
+                                dropdown.classList.add('mt-2');
+                            }
+                        });
+                        
+                        // 添加按钮事件
+                        card.querySelector('.open-web-btn').addEventListener('click', () => {
+                            UIManager.openWeb(web.id);
+                        });
+                        
+                        card.querySelector('.preview-web-btn').addEventListener('click', () => {
+                            UIManager.previewWeb(web.id);
+                            dropdown.classList.add('hidden');
+                        });
+                        
+                        card.querySelector('.edit-web-btn').addEventListener('click', () => {
+                            UIManager.openEditModal(web.id);
+                            dropdown.classList.add('hidden');
+                        });
+                        
+                        card.querySelector('.delete-web-btn').addEventListener('click', () => {
+                            UIManager.deleteWeb(web.id);
+                            dropdown.classList.add('hidden');
+                        });
+                    }
+                });
+                
+                // 【功能 1 - UI】更新批量操作栏状态
+                if (isBulkMode && UIManager.state.selectedWebIds.length > 0) {
+                    document.getElementById('bulk-selected-count').textContent = `已选 ${UIManager.state.selectedWebIds.length} 项`;
+                    bulkEditBar.classList.add('active');
+                } else {
+                    bulkEditBar.classList.remove('active');
+                }
+
+                // 更新批量编辑按钮的图标 (修复 BUG 3)
+                const toggleBulkEditBtn = document.getElementById('toggle-bulk-edit-btn');
+                const bulkEditBtnIcon = toggleBulkEditBtn.querySelector('i');
+                if (isBulkMode) {
+                    // 处于批量模式: X 按钮
+                    bulkEditBtnIcon.className = 'fa fa-times text-red-400';
+                } else {
+                    // 非批量模式: 多选列表图标
+                    bulkEditBtnIcon.className = 'fa fa-list-ul text-neutral-700 dark:text-neutral-300';
+                }
+            },
+            
+            // 渲染标签筛选器 (代码不变)
+            renderTagFilters(activeTagId = 'all') {
+                const allTagButton = document.getElementById('all-tag-button');
+                const tagsContainer = document.getElementById('tags-container');
+                const allTags = TagStorage.getAllTags();
+                const allWebs = WebStorage.getAllWebs();
+                
+                // 重置所有标签按钮的激活状态
+                document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('tag-active'));
+                
+                // 激活“全部”按钮（默认状态或主动选择）
+                if (allTagButton) {
+                    if (activeTagId === 'all') {
+                        allTagButton.classList.add('tag-active');
+                    }
+                }
+                
+                // 获取所有被使用的标签ID
+                const usedTagIds = TagStorage.getUsedTagIdsFromWebs(allWebs);
+                
+                // 只显示被使用的标签
+                const usedTags = allTags.filter(tag => usedTagIds.includes(tag.id));
+                
+                // 清空容器
+                tagsContainer.innerHTML = '';
+                
+                // 渲染标签
+                usedTags.forEach(tag => {
+                    const tagElement = document.createElement('button');
+                    tagElement.className = `tag ${activeTagId === tag.id ? 'tag-active' : ''}`;
+                    tagElement.textContent = tag.name;
+                    tagElement.dataset.tag = tag.id;
+                    
+                    tagElement.addEventListener('click', () => {
+                        UIManager.filterByTag(tag.id);
+                    });
+                    
+                    tagsContainer.appendChild(tagElement);
+                });
+                
+                // 修复：如果当前选中的标签ID无效（例如被删除了），默认回到 '全部'
+                if (activeTagId !== 'all' && !document.querySelector(`[data-tag="${activeTagId}"]`)) {
+                    UIManager.state.activeTagId = 'all';
+                    this.renderTagFilters('all'); // 递归调用以正确设置样式
+                }
+            },
+            
+            // 渲染所有标签（管理标签模态框 - 代码不变）
+            renderAllTags() {
+                const allTagsContainer = document.getElementById('all-tags-container');
+                const allTags = TagStorage.getAllTags();
+                
+                // 清空容器
+                allTagsContainer.innerHTML = '';
+                
+                if (allTags.length === 0) {
+                    allTagsContainer.innerHTML = '<p class="text-neutral-500 dark:text-neutral-400 text-sm w-full py-4">还没有创建任何标签</p>';
+                    return;
+                }
+                
+                // 渲染标签
+                allTags.forEach(tag => {
+                    // 计算使用次数
+                    const allWebs = WebStorage.getAllWebs();
+                    const usageCount = allWebs.filter(web => web.tags && web.tags.includes(tag.id)).length;
+                    
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'flex items-center gap-2 bg-neutral-100 dark:bg-neutral-700 rounded-full px-3 py-1.5';
+                    tagElement.innerHTML = `
+                        <span class="text-sm">${tag.name}</span>
+                        <span class="text-xs bg-neutral-200 dark:bg-neutral-600 text-neutral-600 dark:text-neutral-300 rounded-full px-1.5">${usageCount}</span>
+                        <button class="delete-tag-btn text-neutral-400 hover:text-red-500 transition-colors" data-id="${tag.id}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    
+                    allTagsContainer.appendChild(tagElement);
+                    
+                    // 添加删除事件
+                    tagElement.querySelector('.delete-tag-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        UIManager.deleteTag(tag.id);
+                    });
+                });
+            },
+            
+            // 渲染标签建议 (代码不变)
+            renderTagSuggestions(inputId, suggestionsContainerId, currentTags = []) {
+                const input = document.getElementById(inputId);
+                const suggestionsContainer = document.getElementById(suggestionsContainerId);
+                const searchTerm = input.value.toLowerCase().trim();
+                
+                // 如果没有输入内容，隐藏建议
+                if (!searchTerm) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                // 获取所有标签并过滤
+                let allTags = TagStorage.getAllTags();
+                
+                // 排除已选中的标签
+                if (currentTags && currentTags.length) {
+                    allTags = allTags.filter(tag => !currentTags.includes(tag.id));
+                }
+                
+                // 根据搜索词过滤
+                const filteredTags = allTags.filter(tag => 
+                    tag.name.toLowerCase().includes(searchTerm)
+                );
+                
+                // 如果没有匹配的标签，隐藏建议
+                if (filteredTags.length === 0) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                // 清空并渲染建议
+                suggestionsContainer.innerHTML = '';
+                filteredTags.forEach(tag => {
+                    const suggestion = document.createElement('div');
+                    suggestion.className = 'px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer text-sm';
+                    suggestion.textContent = tag.name;
+                    suggestion.dataset.tagId = tag.id;
+                    
+                    suggestion.addEventListener('click', () => {
+                        // 触发添加标签事件
+                        if (inputId === 'web-tags-input') {
+                            UIManager.addTagToWeb(tag.id);
+                        } else if (inputId === 'edit-web-tags-input') {
+                            UIManager.addTagToEditWeb(tag.id);
+                        } else if (inputId === 'batch-add-tags-input') {
+                            UIManager.addTagToBatch(tag.id); // 新增的批量添加标签函数
+                        }
+                        
+                        // 清空输入并隐藏建议
+                        input.value = '';
+                        suggestionsContainer.classList.add('hidden');
+                    });
+                    
+                    suggestionsContainer.appendChild(suggestion);
+                });
+                
+                // 显示建议
+                suggestionsContainer.classList.remove('hidden');
+            },
+
+            // 【新增】渲染批量添加的标签
+            renderBatchAddTags(selectedTagIds = []) {
+                const container = document.getElementById('batch-add-tags-container');
+                const input = document.getElementById('batch-add-tags-input');
+                const suggestionsContainer = document.getElementById('batch-add-tags-suggestions');
+                container.innerHTML = '';
+                
+                selectedTagIds.forEach(tagId => {
+                    const tag = TagStorage.getTagById(tagId);
+                    if (!tag) return;
+                    
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag flex items-center gap-1 bg-primary bg-opacity-10 text-primary dark:bg-primary dark:bg-opacity-20 dark:text-primary';
+                    tagElement.innerHTML = `
+                        ${tag.name}
+                        <button class="remove-batch-tag-btn text-xs hover:text-primary dark:hover:text-primary transition-colors" data-id="${tagId}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(tagElement);
+                    
+                    // 添加删除事件
+                    tagElement.querySelector('.remove-batch-tag-btn').addEventListener('click', () => {
+                        UIManager.removeTagFromBatch(tagId, 'add');
+                    });
+                });
+
+                // 确保建议功能可用
+                input.addEventListener('input', () => {
+                    UIRenderer.renderTagSuggestions('batch-add-tags-input', 'batch-add-tags-suggestions', UIManager.state.batchTagsToAdd);
+                });
+
+                // 添加回车事件处理
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tagName = input.value.trim();
+                        if (tagName) {
+                        // 尝试添加新标签
+                        const newTag = TagStorage.addTag(tagName);
+                        if (newTag) {
+                            // 新建成功
+                        UIManager.addTagToBatch(newTag.id);
+                        UIRenderer.showToast(`已创建并添加标签: ${newTag.name}`);
+                        } else {
+                            // 标签已存在，尝试查找并添加
+                            const tags = TagStorage.getAllTags();
+                            const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+                            if (existingTag && !UIManager.state.batchTagsToAdd.includes(existingTag.id)) {
+                                UIManager.addTagToBatch(existingTag.id);
+                                UIRenderer.showToast(`已添加现有标签: ${existingTag.name}`, 'info');
+                            } else if (existingTag) {
+                                // 已存在且已选中
+                                UIRenderer.showToast(`标签 "${existingTag.name}" 已存在且已选中`, 'info');
+                            }
+                        }
+                        input.value = '';
+                        // 隐藏建议框
+                        suggestionsContainer.classList.add('hidden');
+                    }
+                }
+                });
+            },
+            
+            // 【新增】渲染批量移除的标签 (共同标签)
+            renderBatchRemoveTags(commonTagIds = []) {
+                const container = document.getElementById('batch-remove-tags-container');
+                container.innerHTML = '';
+
+                if (commonTagIds.length === 0) {
+                    container.innerHTML = '<p class="text-neutral-500 dark:text-neutral-400 text-sm">选中的网页没有共同标签可移除。</p>';
+                    return;
+                }
+
+                commonTagIds.forEach(tagId => {
+                    const tag = TagStorage.getTagById(tagId);
+                    if (!tag) return;
+                    
+                    const isExcluded = UIManager.state.batchTagsToExclude.includes(tagId);
+                    
+                    const tagElement = document.createElement('div');
+                    const baseClasses = 'tag flex items-center gap-1 cursor-pointer transition-all duration-150';
+                    const activeClasses = isExcluded 
+                        ? 'bg-red-300 text-white border-2 border-red-400 shadow-md'  // 选中状态：红色背景+红色边框+阴影
+                        : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300 border-2 border-transparent hover:bg-red-100 dark:hover:bg-red-900 dark:hover:bg-opacity-50'; // 未选中：灰色背景，透明边框
+
+                    tagElement.className = baseClasses + ' ' + activeClasses;
+                    tagElement.dataset.id = tagId;
+                    
+                    tagElement.innerHTML = `
+                        ${tag.name}
+                        <i class="fa ${isExcluded ? 'fa-check' : 'fa-times'} text-xs ml-1"></i>
+                    `;
+
+                    tagElement.addEventListener('click', () => {
+                        UIManager.toggleTagForBatchRemoval(tagId);
+                    });
+                    
+                    container.appendChild(tagElement);
+                });
+            },
+
+
+            
+            // 渲染添加网页的标签 (代码不变)
+            renderAddWebTags(selectedTagIds = []) {
+                const container = document.getElementById('add-tags-container');
+                container.innerHTML = '';
+                
+                if (!selectedTagIds || selectedTagIds.length === 0) {
+                    return;
+                }
+                
+                selectedTagIds.forEach(tagId => {
+                    const tag = TagStorage.getTagById(tagId);
+                    if (!tag) return;
+                    
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag flex items-center gap-1';
+                    tagElement.innerHTML = `
+                        ${tag.name}
+                        <button class="remove-tag-btn text-xs hover:text-white transition-colors" data-id="${tagId}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(tagElement);
+                    
+                    // 添加删除事件
+                    tagElement.querySelector('.remove-tag-btn').addEventListener('click', () => {
+                        UIManager.removeTagFromWeb(tagId);
+                    });
+                });
+            },
+            
+            // 渲染编辑网页的标签 (代码不变)
+            renderEditWebTags(selectedTagIds = []) {
+                const container = document.getElementById('edit-tags-container');
+                container.innerHTML = '';
+                
+                if (!selectedTagIds || selectedTagIds.length === 0) {
+                    return;
+                }
+                
+                selectedTagIds.forEach(tagId => {
+                    const tag = TagStorage.getTagById(tagId);
+                    if (!tag) return;
+                    
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag flex items-center gap-1';
+                    tagElement.innerHTML = `
+                        ${tag.name}
+                        <button class="remove-tag-btn text-xs hover:text-white transition-colors" data-id="${tagId}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(tagElement);
+                    
+                    // 添加删除事件
+                    tagElement.querySelector('.remove-tag-btn').addEventListener('click', () => {
+                        UIManager.removeTagFromEditWeb(tagId);
+                    });
+                });
+            },
+            
+            // 显示提示消息 (代码不变)
+            showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toast-message');
+                const toastIcon = document.getElementById('toast-icon');
+                const toastIconI = document.getElementById('toast-icon-i');
+                
+                // 设置消息内容
+                toastMessage.textContent = message;
+                
+                // 设置图标和样式
+                let iconClass, bgClass, textClass;
+
+                if (type === 'success') {
+                    iconClass = 'fa fa-check';
+                    bgClass = 'bg-primary bg-opacity-10 dark:bg-primary dark:bg-opacity-20';
+                    textClass = 'text-primary dark:text-primary';
+                } else if (type === 'error') {
+                    iconClass = 'fa fa-times';
+                    bgClass = 'bg-red-100 dark:bg-red-500';
+                    textClass = 'text-red-300 dark:text-neutral-800';
+                } else if (type === 'info') {
+                    iconClass = 'fa fa-info';
+                    bgClass = 'bg-indigo-100 dark:bg-indigo-300';
+                    textClass = 'text-indigo-300 dark:text-neutral-800';
+                } else {
+                    iconClass = 'fa fa-exclamation';
+                    bgClass = 'bg-yellow-100 dark:bg-yellow-900';
+                    textClass = 'text-yellow-500 dark:text-yellow-400';
+                }
+
+                toastIcon.className = `w-6 h-6 rounded-full ${bgClass} flex items-center justify-center`;
+                toastIconI.className = `${iconClass} ${textClass}`;
+                
+                // 显示提示
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                
+                // 3秒后自动隐藏
+                clearTimeout(toast.timeoutId);
+                toast.timeoutId = setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                }, 3000);
+            }
+        };
+
+        // UI 交互管理模块
+        const UIManager = {
+            // 状态管理
+            state: {
+                searchTerm: '',
+                activeTagId: 'all',
+                addWebTags: [],
+                editWebTags: [],
+                currentFullscreenWebId: null,
+                // 【功能 1 - 状态】新增批量编辑状态
+                isBulkEditMode: false,
+                selectedWebIds: [],
+                // 【功能 1 - 状态】新增批量标签临时状态
+                batchTagsToAdd: [], 
+                batchTagsToExclude: [],
+            },
+            
+            // 初始化应用
+            init() {
+                // 初始化主题
+                this.initTheme();
+                
+                // 绑定事件
+                this.bindEvents(); // 先绑定事件
+                
+                // 渲染收藏列表和标签
+                this.refreshAllUI(); // 再渲染 UI
+
+                // 【新增/修正】代码编辑/查看模态框中的按钮事件绑定 (现已增加撤销/恢复功能)
+        
+                // 获取编辑框引用，用于调用内置的 undo/redo 方法
+                const editHtmlCodeInput = document.getElementById('edit-html-code-input');
+
+                document.getElementById('undo-code-btn').addEventListener('click', () => {
+                    // 【核心】调用浏览器内置的撤销功能
+                    editHtmlCodeInput.focus(); // 聚焦是确保操作生效的关键
+                    document.execCommand('undo', false, null); // 使用 execCommand 实现
+                });
+
+                document.getElementById('redo-code-btn').addEventListener('click', () => {
+                    // 【核心】调用浏览器内置的恢复功能
+                    editHtmlCodeInput.focus(); // 聚焦是确保操作生效的关键
+                    document.execCommand('redo', false, null); // 使用 execCommand 实现
+                });
+                document.getElementById('copy-code-btn').addEventListener('click', () => {
+                    this.copyCode('edit-modal');
+                });
+                document.getElementById('fullscreen-code-btn').addEventListener('click', () => {
+                    this.openFullscreenCode();
+                });
+                document.getElementById('fullscreen-copy-btn').addEventListener('click', () => {
+                    this.copyCode('fullscreen-modal');
+                });
+                document.getElementById('close-fullscreen-btn').addEventListener('click', () => {
+                    this.closeFullscreenCode();
+                });
+
+                // 【新增】全屏模态框的撤销/恢复事件绑定
+                const fullscreenHtmlCodeInput = document.getElementById('fullscreen-html-code-input');
+        
+                document.getElementById('fullscreen-undo-btn').addEventListener('click', () => {
+                    fullscreenHtmlCodeInput.focus();
+                    document.execCommand('undo', false, null);
+                });
+
+                document.getElementById('fullscreen-redo-btn').addEventListener('click', () => {
+                    fullscreenHtmlCodeInput.focus();
+                    document.execCommand('redo', false, null);
+                });
+            },
+            
+            // 统一刷新所有主界面UI
+            refreshAllUI() {
+                UIRenderer.renderCollectionList(this.state.searchTerm, this.state.activeTagId);
+                UIRenderer.renderTagFilters(this.state.activeTagId);
+            },
+
+            // 初始化主题
+            initTheme() {
+                const isDarkMode = localStorage.getItem('dark_mode') === 'true' || 
+                                  (localStorage.getItem('dark_mode') === null && 
+                                   window.matchMedia('(prefers-color-scheme: dark)').matches);
+                
+                if (isDarkMode) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            },
+            
+            // 切换主题
+            toggleTheme() {
+                const isDarkMode = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('dark_mode', isDarkMode);
+            },
+            
+            // 【功能 1 - 逻辑】切换批量编辑模式 (修复 BUG 3)
+            toggleBulkEditMode() {
+                this.state.isBulkEditMode = !this.state.isBulkEditMode;
+                this.state.selectedWebIds = []; // 清空选中项
+                this.refreshAllUI();
+            },
+
+            // 【功能 1 - 逻辑】切换网页选中状态
+            toggleSelectWeb(id) {
+                const index = this.state.selectedWebIds.indexOf(id);
+                if (index > -1) {
+                    this.state.selectedWebIds.splice(index, 1); // 移除
+                } else {
+                    this.state.selectedWebIds.push(id); // 添加
+                }
+                this.refreshAllUI(); // 刷新 UI，更新高亮和批量操作栏
+            },
+            
+            // 【功能 1 - 增强】批量删除逻辑
+            batchDelete() {
+                const ids = this.state.selectedWebIds;
+                if (ids.length === 0) return;
+
+                if (!confirm(`确定要删除选中的 ${ids.length} 个网页吗？此操作不可撤销。`)) {
+                    return;
+                }
+                
+                const deletedCount = WebStorage.batchDeleteWebs(ids);
+                
+                this.state.isBulkEditMode = false; // 退出批量模式
+                this.state.selectedWebIds = [];
+                this.refreshAllUI();
+                
+                if (deletedCount > 0) {
+                    UIRenderer.showToast(`成功删除 ${deletedCount} 个网页`, 'success');
+                } else {
+                    UIRenderer.showToast('没有网页被删除。', 'info');
+                }
+            },
+            
+            // 【新增】打开批量标签模态框
+            openBatchTagModal() {
+                const ids = this.state.selectedWebIds;
+                if (ids.length === 0) {
+                    UIRenderer.showToast('请至少选择一个网页进行操作', 'info');
+                    return;
+                }
+
+                // 1. 重置临时状态
+                this.state.batchTagsToAdd = [];
+                this.state.batchTagsToExclude = [];
+
+                // 2. 计算共同标签 (用于移除区域)
+                const webs = ids.map(id => WebStorage.getWebById(id));
+                let commonTags = new Set(webs[0].tags); // 从第一个网页的标签开始
+                
+                for (let i = 1; i < webs.length; i++) {
+                    const currentTags = new Set(webs[i].tags);
+                    commonTags = new Set([...commonTags].filter(tag => currentTags.has(tag)));
+                }
+
+                // 3. 渲染模态框
+                document.getElementById('batch-count-display').textContent = ids.length;
+                UIRenderer.renderBatchAddTags(this.state.batchTagsToAdd);
+                UIRenderer.renderBatchRemoveTags(Array.from(commonTags));
+                
+                // 4. 显示模态框
+                document.getElementById('batch-tag-modal').classList.remove('hidden');
+            },
+
+            // 【新增】批量添加标签到临时列表
+            addTagToBatch(tagId) {
+                if (!this.state.batchTagsToAdd.includes(tagId)) {
+                    this.state.batchTagsToAdd.push(tagId);
+                    UIRenderer.renderBatchAddTags(this.state.batchTagsToAdd);
+                }
+            },
+
+            // 【新增】从临时列表移除标签
+            removeTagFromBatch(tagId) {
+                this.state.batchTagsToAdd = this.state.batchTagsToAdd.filter(id => id !== tagId);
+                UIRenderer.renderBatchAddTags(this.state.batchTagsToAdd);
+            },
+            
+            // 【新增】切换标签的批量移除状态
+            toggleTagForBatchRemoval(tagId) {
+            const index = this.state.batchTagsToExclude.indexOf(tagId);
+            if (index > -1) {
+                this.state.batchTagsToExclude.splice(index, 1); // 移除
+            } else {
+                this.state.batchTagsToExclude.push(tagId); // 添加
+            }
+            // 重新渲染移除区域以更新高亮
+            const container = document.getElementById('batch-remove-tags-container');
+            if (container) {
+                // 获取当前的共同标签（从现有标签元素中提取）
+                const currentTags = Array.from(container.querySelectorAll('.tag[data-id]')).map(tag => tag.dataset.id);
+                UIRenderer.renderBatchRemoveTags(currentTags);
+                }
+            },
+
+            // 【新增】确认应用批量标签操作
+             processBatchTags() {
+                const ids = this.state.selectedWebIds;
+                const tagsToAdd = this.state.batchTagsToAdd;
+                const tagsToRemove = this.state.batchTagsToExclude;
+                const count = ids.length;
+
+                if (tagsToAdd.length === 0 && tagsToRemove.length === 0) {
+                    UIRenderer.showToast('没有选择任何添加或移除的标签', 'info');
+                    return;
+                }
+    
+                // 构造确认消息
+                let message = `确认对选中的 ${count} 个网页进行标签操作吗？\n`;
+                if (tagsToAdd.length > 0) {
+                    message += `\n - 批量添加 ${tagsToAdd.length} 个标签`;
+                }
+                if (tagsToRemove.length > 0) {
+                    message += `\n - 批量移除 ${tagsToRemove.length} 个标签`;
+                }
+
+                if (!confirm(message)) {
+                    return; // 用户取消
+                }
+
+                const modifiedCount = WebStorage.batchUpdateTags(ids, tagsToAdd, tagsToRemove);
+    
+                this.closeAllModals();
+                this.state.isBulkEditMode = false; // 退出批量模式
+                this.state.selectedWebIds = [];
+                this.refreshAllUI();
+
+                if (modifiedCount > 0) {
+                    UIRenderer.showToast(`成功修改了 ${modifiedCount} 个网页的标签`, 'success');
+                } else {
+                    UIRenderer.showToast('没有网页的标签被修改。', 'info');
+                }
+            },
+            
+            // 【修正】一键复制代码 (修复 BUG 2：实现可靠复制，并支持全屏模态框)
+            copyCode(source = 'edit-modal') {
+                let codeToCopy = '';
+
+                if (source === 'edit-modal') {
+                    const codeEditAreaContainer = document.getElementById('code-edit-area'); // 编辑区域的容器
+                    const codeEditInput = document.getElementById('edit-html-code-input');
+                    const codeViewArea = document.getElementById('code-view-area');
+
+                    // 判断当前是编辑区域还是查看区域
+                    if (!codeEditAreaContainer.classList.contains('hidden')) { 
+                        // 编辑区域
+                        codeToCopy = codeEditInput.value;
+                    } else {
+                        // 查看区域
+                        codeToCopy = codeViewArea.textContent;
+                    }
+                } else if (source === 'fullscreen-modal') {
+                    const fullEditArea = document.getElementById('fullscreen-code-edit');
+                    const fullEditInput = document.getElementById('fullscreen-html-code-input');
+                    const fullViewArea = document.getElementById('fullscreen-code-view');
+                
+                    // 判断全屏模式下是编辑还是查看
+                    if (!fullEditArea.classList.contains('hidden')) {
+                        codeToCopy = fullEditInput.value;
+                    } else {
+                        codeToCopy = fullViewArea.textContent;
+                    }
+                }
+
+                if (!codeToCopy) {
+                    UIRenderer.showToast('代码区域为空', 'error');
+                    return;
+                }
+
+                // 尝试使用 Clipboard API
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    UIRenderer.showToast('代码已复制到剪贴板！', 'success');
+                }).catch(err => {
+                    console.error('Clipboard API 复制失败:', err);
+                    // 兼容性回退
+                    this._fallbackCopyTextToClipboard(codeToCopy);
+                });
+            },
+            
+            // 【新增】全屏打开代码
+            openFullscreenCode() {
+                const webId = document.getElementById('edit-web-id').value;
+                const web = WebStorage.getWebById(webId);
+                if (!web) return;
+
+                const isViewing = !document.getElementById('code-view-area').classList.contains('hidden');
+                
+                // 1. 设置全屏模态框标题
+                document.getElementById('fullscreen-code-title').textContent = `${web.title} - 代码 (${isViewing ? '查看' : '编辑'})`;
+
+                // 2. 同步数据和模式
+                const fullView = document.getElementById('fullscreen-code-view');
+                const fullEditArea = document.getElementById('fullscreen-code-edit');
+                const fullEditInput = document.getElementById('fullscreen-html-code-input');
+                const currentEditInput = document.getElementById('edit-html-code-input');
+                const currentViewArea = document.getElementById('code-view-area');
+
+                if (isViewing) {
+                    // 查看模式
+                    fullView.textContent = currentViewArea.textContent;
+                    fullView.classList.remove('hidden');
+                    fullEditArea.classList.add('hidden');
+                } else {
+                    // 编辑模式
+                    fullEditInput.value = currentEditInput.value;
+                    fullView.classList.add('hidden');
+                    fullEditArea.classList.remove('hidden');
+                }
+
+                // 3. 显示全屏模态框
+                document.getElementById('code-fullscreen-modal').classList.remove('hidden');
+            },
+
+            // 【新增】关闭全屏代码
+            closeFullscreenCode() {
+                const fullEditInput = document.getElementById('fullscreen-html-code-input');
+                const currentEditInput = document.getElementById('edit-html-code-input');
+                const fullEditArea = document.getElementById('fullscreen-code-edit');
+                
+                // 如果当前处于全屏编辑模式，则同步数据回主编辑框
+                if (!fullEditArea.classList.contains('hidden')) {
+                    currentEditInput.value = fullEditInput.value;
+                    // 同时更新非编辑状态下的查看区域内容
+                    document.getElementById('code-view-area').textContent = fullEditInput.value;
+                }
+                
+                document.getElementById('code-fullscreen-modal').classList.add('hidden');
+            },
+            
+            // 绑定事件
+            bindEvents() {
+                // 【功能 1 - 交互】批量编辑按钮
+                document.getElementById('toggle-bulk-edit-btn').addEventListener('click', () => {
+                    this.toggleBulkEditMode();
+                });
+
+                // 【功能 1 - 增强】批量删除按钮
+                document.getElementById('batch-delete-btn').addEventListener('click', () => {
+                    this.batchDelete();
+                });
+
+                // 【功能 1 - 增强】批量标签按钮 (点击打开模态框)
+                document.getElementById('batch-tag-btn').addEventListener('click', () => {
+                    this.openBatchTagModal();
+                });
+
+                // 【新增】确认批量标签操作按钮
+                document.getElementById('confirm-batch-tag-btn').addEventListener('click', () => {
+                    this.processBatchTags();
+                });
+
+                // 【新增 E-2】编辑页复制按钮
+                document.getElementById('copy-code-btn').addEventListener('click', () => {
+                    this.copyCode();
+                });
+                
+                // 【新增 E-3】编辑页全屏按钮
+                document.getElementById('fullscreen-code-btn').addEventListener('click', () => {
+                    this.openFullscreenCode();
+                });
+
+                // 【新增 E-3】全屏模式关闭按钮
+                document.getElementById('close-fullscreen-btn').addEventListener('click', () => {
+                    this.closeFullscreenCode();
+                });
+
+                // 【新增 E-2】全屏模式复制按钮
+                document.getElementById('fullscreen-copy-btn').addEventListener('click', () => {
+                    // 复用 copyCode 逻辑，但需判断当前处于查看或编辑模式
+                    const isViewing = !document.getElementById('fullscreen-code-edit').classList.contains('hidden');
+                    const codeToCopy = isViewing 
+                        ? document.getElementById('fullscreen-code-view').textContent 
+                        : document.getElementById('fullscreen-html-code-input').value;
+                    
+                    if (!codeToCopy) {
+                         UIRenderer.showToast('代码区域为空', 'error');
+                         return;
+                    }
+
+                    navigator.clipboard.writeText(codeToCopy).then(() => {
+                        UIRenderer.showToast('代码已复制到剪贴板！', 'success');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        UIRenderer.showToast('代码复制失败，请手动复制。', 'error');
+                    });
+                });
+
+                // 【修复 P3】为“全部”按钮绑定事件
+                document.getElementById('all-tag-button').addEventListener('click', () => {
+                    this.filterByTag('all');
+                });
+                
+                // 主题切换按钮
+                document.getElementById('theme-toggle').addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+                
+                // 添加网页按钮
+                document.getElementById('add-web-btn').addEventListener('click', () => {
+                    this.openAddModal();
+                });
+                
+                // 空状态添加按钮
+                document.getElementById('empty-add-btn').addEventListener('click', () => {
+                    this.openAddModal();
+                });
+                
+                // 关闭模态框按钮
+                document.querySelectorAll('.close-modal').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.closeAllModals();
+                    });
+                });
+                
+                // 上传方式切换
+                document.getElementById('upload-file-tab').addEventListener('click', () => {
+                    this.switchUploadTab('file');
+                });
+                
+                document.getElementById('paste-code-tab').addEventListener('click', () => {
+                    this.switchUploadTab('code');
+                });
+                
+                // 代码查看/编辑切换
+                document.getElementById('view-code-tab').addEventListener('click', () => {
+                    this.switchCodeTab('view');
+                });
+                
+                document.getElementById('edit-code-tab').addEventListener('click', () => {
+                    this.switchCodeTab('edit');
+                });
+                
+                // 导入方式切换
+                document.getElementById('import-file-tab').addEventListener('click', () => {
+                    this.switchImportTab('file');
+                });
+                
+                document.getElementById('import-code-tab').addEventListener('click', () => {
+                    this.switchImportTab('code');
+                });
+                
+                // 文件上传区域点击
+                document.getElementById('file-upload-area').addEventListener('click', () => {
+                    document.getElementById('html-file-input').click();
+                });
+                
+                // 文件导入区域点击
+                document.getElementById('file-import-area').addEventListener('click', () => {
+                    document.getElementById('backup-file-input').click();
+                });
+                
+                // HTML文件选择
+                document.getElementById('html-file-input').addEventListener('change', (e) => {
+                    this.handleHtmlFileSelect(e.target.files[0]);
+                });
+                
+                // 备份文件选择
+                document.getElementById('backup-file-input').addEventListener('change', (e) => {
+                    this.handleBackupFileSelect(e.target.files[0]);
+                });
+                
+                // 保存网页按钮
+                document.getElementById('save-web-btn').addEventListener('click', () => {
+                    this.saveWeb();
+                });
+                
+                // 更新网页按钮
+                document.getElementById('update-web-btn').addEventListener('click', () => {
+                    this.updateWeb();
+                });
+                
+                // 删除网页按钮
+                document.getElementById('delete-web-btn').addEventListener('click', () => {
+                    const id = document.getElementById('edit-web-id').value;
+                    this.deleteWeb(id);
+                });
+                
+                // 导出全部按钮
+                document.getElementById('export-all-btn').addEventListener('click', () => {
+                    this.exportAllWebs();
+                });
+                
+                // 导入按钮
+                document.getElementById('import-btn').addEventListener('click', () => {
+                    this.openImportModal();
+                });
+                
+                // 确认导入按钮
+                document.getElementById('confirm-import-btn').addEventListener('click', () => {
+                    this.importWebs();
+                });
+                
+                // 在新标签页打开按钮
+                document.getElementById('open-in-new-tab').addEventListener('click', () => {
+                    const iframe = document.getElementById('web-preview-iframe');
+                    const blob = new Blob([iframe.srcdoc], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                });
+                
+                // 管理标签按钮
+                document.getElementById('manage-tags-btn').addEventListener('click', () => {
+                    this.openManageTagsModal();
+                });
+                
+                // 添加标签按钮
+                document.getElementById('add-tag-btn').addEventListener('click', () => {
+                    const tagName = document.getElementById('new-tag-input').value.trim();
+                    this.addNewTag(tagName);
+                });
+                
+                // 新标签输入框回车事件
+                document.getElementById('new-tag-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tagName = document.getElementById('new-tag-input').value.trim();
+                        this.addNewTag(tagName);
+                    }
+                });
+                
+                // 添加网页标签输入框事件
+                const webTagsInput = document.getElementById('web-tags-input');
+                webTagsInput.addEventListener('input', () => {
+                    UIRenderer.renderTagSuggestions('web-tags-input', 'tags-suggestions', this.state.addWebTags);
+                });
+                
+                // 实时创建/添加标签逻辑 - 添加网页模态框
+                webTagsInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tagName = webTagsInput.value.trim();
+                        if (tagName) {
+                            // 尝试添加新标签
+                            const newTag = TagStorage.addTag(tagName);
+                            if (newTag) {
+                                // 新建成功
+                                this.addTagToWeb(newTag.id);
+                                UIRenderer.showToast(`已创建并添加标签: ${newTag.name}`);
+                            } else {
+                                // 标签已存在，尝试查找并添加
+                                const tags = TagStorage.getAllTags();
+                                const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+                                if (existingTag && !this.state.addWebTags.includes(existingTag.id)) {
+                                    this.addTagToWeb(existingTag.id);
+                                    UIRenderer.showToast(`已添加现有标签: ${existingTag.name}`, 'info');
+                                } else if (existingTag) {
+                                    // 已存在且已选中
+                                    UIRenderer.showToast(`标签 "${existingTag.name}" 已存在且已选中`, 'info');
+                                } else {
+                                    // 理论上不会发生，但作为备份
+                                    UIRenderer.showToast(`标签 "${tagName}" 已存在但无法识别，请在管理标签中查看`, 'error');
+                                }
+                            }
+                            webTagsInput.value = '';
+                            UIRenderer.renderTagSuggestions('web-tags-input', 'tags-suggestions', this.state.addWebTags);
+                        }
+                    }
+                });
+                
+                // 编辑网页标签输入框事件
+                const editWebTagsInput = document.getElementById('edit-web-tags-input');
+                editWebTagsInput.addEventListener('input', () => {
+                    UIRenderer.renderTagSuggestions('edit-web-tags-input', 'edit-tags-suggestions', this.state.editWebTags);
+                });
+                
+                // 实时创建/添加标签逻辑 - 编辑网页模态框
+                editWebTagsInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tagName = editWebTagsInput.value.trim();
+                        if (tagName) {
+                            // 尝试添加新标签
+                            const newTag = TagStorage.addTag(tagName);
+                            if (newTag) {
+                                // 新建成功
+                                this.addTagToEditWeb(newTag.id);
+                                UIRenderer.showToast(`已创建并添加标签: ${newTag.name}`);
+                            } else {
+                                // 标签已存在，尝试查找并添加
+                                const tags = TagStorage.getAllTags();
+                                const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+                                if (existingTag && !this.state.editWebTags.includes(existingTag.id)) {
+                                    this.addTagToEditWeb(existingTag.id);
+                                    UIRenderer.showToast(`已添加现有标签: ${existingTag.name}`, 'info');
+                                } else if (existingTag) {
+                                    // 已存在且已选中
+                                    UIRenderer.showToast(`标签 "${existingTag.name}" 已存在且已选中`, 'info');
+                                } else {
+                                    // 理论上不会发生，但作为备份
+                                    UIRenderer.showToast(`标签 "${tagName}" 已存在但无法识别，请在管理标签中查看`, 'error');
+                                }
+                            }
+                            editWebTagsInput.value = '';
+                            UIRenderer.renderTagSuggestions('edit-web-tags-input', 'edit-tags-suggestions', this.state.editWebTags);
+                        }
+                    }
+                });
+                
+                // 点击页面其他区域关闭标签建议
+                document.addEventListener('click', (e) => {
+                    const tagsSuggestions = document.getElementById('tags-suggestions');
+                    const webTagsInput = document.getElementById('web-tags-input');
+                    
+                    if (tagsSuggestions && webTagsInput && !tagsSuggestions.contains(e.target) && e.target !== webTagsInput) {
+                        tagsSuggestions.classList.add('hidden');
+                    }
+                    
+                    const editTagsSuggestions = document.getElementById('edit-tags-suggestions');
+                    const editWebTagsInput = document.getElementById('edit-web-tags-input');
+                    
+                    if (editTagsSuggestions && editWebTagsInput && !editTagsSuggestions.contains(e.target) && e.target !== editWebTagsInput) {
+                        editTagsSuggestions.classList.add('hidden');
+                    }
+                });
+                
+                // 搜索框事件
+                const searchInput = document.getElementById('search-input');
+                searchInput.addEventListener('input', () => {
+                    this.state.searchTerm = searchInput.value.trim();
+                    this.updateSearchUI();
+                    
+                    // 显示/隐藏清除按钮
+                    const clearSearchBtn = document.getElementById('clear-search');
+                    if (this.state.searchTerm) {
+                        clearSearchBtn.classList.remove('hidden');
+                    } else {
+                        clearSearchBtn.classList.add('hidden');
+                    }
+                });
+                
+                // 清除搜索按钮
+                document.getElementById('clear-search').addEventListener('click', () => {
+                    this.clearSearch();
+                });
+                
+                document.getElementById('clear-search-btn').addEventListener('click', () => {
+                    this.clearSearch();
+                });
+                
+                // 点击模态框背景关闭模态框
+                document.querySelectorAll('#add-web-modal, #edit-web-modal, #preview-web-modal, #import-modal, #manage-tags-modal, #batch-tag-modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal || e.target.closest('.close-modal')) {
+                            this.closeAllModals();
+                            // 【全屏功能】关闭全屏代码模态框
+                            if (modal.id === 'code-fullscreen-modal') {
+                                this.closeFullscreenCode();
+                            }
+                        }
+                    });
+                });
+            },
+            
+            // 打开添加网页模态框
+            openAddModal() {
+                // 重置状态和表单
+                this.state.addWebTags = [];
+                document.getElementById('web-title').value = '';
+                document.getElementById('web-description').value = '';
+                document.getElementById('html-file-input').value = '';
+                document.getElementById('html-code-input').value = '';
+                document.getElementById('web-tags-input').value = '';
+                UIRenderer.renderAddWebTags();
+                
+                // 切换到文件上传标签
+                this.switchUploadTab('file');
+                
+                // 显示模态框
+                document.getElementById('add-web-modal').classList.remove('hidden');
+            },
+            
+            // 打开编辑网页模态框
+            openEditModal(id) {
+                const web = WebStorage.getWebById(id);
+                if (!web) return;
+                
+                // 重置状态
+                this.state.editWebTags = web.tags || [];
+                this.state.currentFullscreenWebId = id;
+                
+                // 填充表单
+                document.getElementById('edit-web-id').value = web.id;
+                document.getElementById('edit-web-title').value = web.title;
+                document.getElementById('edit-web-description').value = web.description || '';
+                document.getElementById('code-view-area').textContent = web.htmlContent;
+                document.getElementById('edit-html-code-input').value = web.htmlContent;
+                document.getElementById('edit-web-tags-input').value = ''; // 清空输入框
+                
+                // 渲染标签
+                UIRenderer.renderEditWebTags(this.state.editWebTags);
+                
+                // 切换到代码查看标签
+                this.switchCodeTab('view');
+                
+                // 显示模态框
+                document.getElementById('edit-web-modal').classList.remove('hidden');
+            },
+            
+            // 打开预览网页模态框
+            previewWeb(id) {
+                const web = WebStorage.getWebById(id);
+                if (!web) return;
+                
+                // 设置标题
+                document.getElementById('preview-web-title').textContent = web.title;
+                
+                // 设置iframe内容
+                const iframe = document.getElementById('web-preview-iframe');
+                iframe.srcdoc = web.htmlContent;
+                
+                // 显示模态框
+                document.getElementById('preview-web-modal').classList.remove('hidden');
+            },
+            
+            // 打开导入模态框
+            openImportModal() {
+                // 重置表单
+                document.getElementById('backup-file-input').value = '';
+                document.getElementById('backup-code-input').value = '';
+                
+                // 切换到文件导入标签
+                this.switchImportTab('file');
+                
+                // 显示模态框
+                document.getElementById('import-modal').classList.remove('hidden');
+            },
+            
+            // 打开管理标签模态框
+            openManageTagsModal() {
+                // 每次打开时强制渲染所有标签，确保是最新的
+                UIRenderer.renderAllTags();
+                
+                // 清空输入框
+                document.getElementById('new-tag-input').value = '';
+                
+                // 显示模态框
+                document.getElementById('manage-tags-modal').classList.remove('hidden');
+            },
+            
+            // 关闭所有模态框
+            closeAllModals() {
+                document.getElementById('add-web-modal').classList.add('hidden');
+                document.getElementById('edit-web-modal').classList.add('hidden');
+                document.getElementById('preview-web-modal').classList.add('hidden');
+                document.getElementById('import-modal').classList.add('hidden');
+                document.getElementById('manage-tags-modal').classList.add('hidden');
+                document.getElementById('batch-tag-modal').classList.add('hidden'); // 新增关闭批量标签模态框
+                document.getElementById('tags-suggestions').classList.add('hidden');
+                document.getElementById('edit-tags-suggestions').classList.add('hidden');
+            },
+            
+            // 切换上传方式标签
+            switchUploadTab(tab) {
+                const fileTab = document.getElementById('upload-file-tab');
+                const codeTab = document.getElementById('paste-code-tab');
+                const fileArea = document.getElementById('file-upload-area');
+                const codeArea = document.getElementById('code-paste-area');
+                
+                if (tab === 'file') {
+                    fileTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    fileTab.classList.add('bg-primary', 'text-white');
+                    codeTab.classList.remove('bg-primary', 'text-white');
+                    codeTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    fileArea.classList.remove('hidden');
+                    codeArea.classList.add('hidden');
+                } else {
+                    codeTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    codeTab.classList.add('bg-primary', 'text-white');
+                    fileTab.classList.remove('bg-primary', 'text-white');
+                    fileTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    codeArea.classList.remove('hidden');
+                    fileArea.classList.add('hidden');
+                }
+            },
+            
+            // 切换代码查看/编辑标签
+            switchCodeTab(tab) {
+                const viewTab = document.getElementById('view-code-tab');
+                const editTab = document.getElementById('edit-code-tab');
+                const viewArea = document.getElementById('code-view-area');
+                const editArea = document.getElementById('code-edit-area');
+                
+                if (tab === 'view') {
+                    viewTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    viewTab.classList.add('bg-primary', 'text-white');
+                    editTab.classList.remove('bg-primary', 'text-white');
+                    editTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    viewArea.classList.remove('hidden');
+                    editArea.classList.add('hidden');
+                } else {
+                    editTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    editTab.classList.add('bg-primary', 'text-white');
+                    viewTab.classList.remove('bg-primary', 'text-white');
+                    viewTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    editArea.classList.remove('hidden');
+                    viewArea.classList.add('hidden');
+                }
+            },
+            
+            // 切换导入方式标签
+            switchImportTab(tab) {
+                const fileTab = document.getElementById('import-file-tab');
+                const codeTab = document.getElementById('import-code-tab');
+                const fileArea = document.getElementById('file-import-area');
+                const codeArea = document.getElementById('code-import-area');
+                
+                if (tab === 'file') {
+                    fileTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    fileTab.classList.add('bg-primary', 'text-white');
+                    codeTab.classList.remove('bg-primary', 'text-white');
+                    codeTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    fileArea.classList.remove('hidden');
+                    codeArea.classList.add('hidden');
+                } else {
+                    codeTab.classList.remove('bg-neutral-200', 'dark:bg-neutral-700');
+                    codeTab.classList.add('bg-primary', 'text-white');
+                    fileTab.classList.remove('bg-primary', 'text-white');
+                    fileTab.classList.add('bg-neutral-200', 'dark:bg-neutral-700');
+                    codeArea.classList.remove('hidden');
+                    fileArea.classList.add('hidden');
+                }
+            },
+            
+            // 处理HTML文件选择
+            handleHtmlFileSelect(file) {
+                if (!file || !file.name.endsWith('.html')) {
+                    UIRenderer.showToast('请选择HTML文件', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('html-code-input').value = e.target.result;
+                    // 在文件上传成功后给出提示
+                    UIRenderer.showToast(`文件加载成功: ${file.name}`, 'success');
+                };
+                reader.readAsText(file);
+            },
+            
+            // 处理备份文件选择
+            handleBackupFileSelect(file) {
+                if (!file || !file.name.endsWith('.json')) {
+                    UIRenderer.showToast('请选择JSON备份文件', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('backup-code-input').value = e.target.result;
+                    // 在文件加载成功后给出提示
+                    UIRenderer.showToast(`备份文件加载成功: ${file.name}`, 'success');
+                };
+                reader.readAsText(file);
+            },
+            
+            // 保存新网页
+            saveWeb() {
+                const title = document.getElementById('web-title').value.trim();
+                const description = document.getElementById('web-description').value.trim();
+                let htmlContent = document.getElementById('html-code-input').value.trim(); // 统一从代码输入框获取
+                
+                // 验证
+                if (!title) {
+                    UIRenderer.showToast('请输入网页标题', 'error');
+                    return;
+                }
+                
+                if (!htmlContent) {
+                    UIRenderer.showToast('请上传HTML文件或输入HTML代码', 'error');
+                    return;
+                }
+                
+                // 创建新网页
+                const newWeb = {
+                    title,
+                    description,
+                    htmlContent,
+                    tags: this.state.addWebTags
+                };
+                
+                WebStorage.addWeb(newWeb);
+                
+                // 关闭模态框并刷新UI
+                this.closeAllModals();
+                this.refreshAllUI();
+                UIRenderer.showToast('网页添加成功');
+                
+                // 重置文件输入
+                document.getElementById('html-file-input').value = '';
+            },
+            
+            // 更新网页
+            updateWeb() {
+                const id = document.getElementById('edit-web-id').value;
+                const title = document.getElementById('edit-web-title').value.trim();
+                const description = document.getElementById('edit-web-description').value.trim();
+                const htmlContent = document.getElementById('edit-html-code-input').value.trim();
+                
+                // 验证
+                if (!title) {
+                    UIRenderer.showToast('请输入网页标题', 'error');
+                    return;
+                }
+                
+                if (!htmlContent) {
+                    UIRenderer.showToast('HTML代码不能为空', 'error');
+                    return;
+                }
+                
+                // 更新网页
+                const updatedWeb = {
+                    title,
+                    description,
+                    htmlContent,
+                    tags: this.state.editWebTags
+                };
+                
+                WebStorage.updateWeb(id, updatedWeb);
+                
+                // 关闭模态框并刷新UI
+                this.closeAllModals();
+                this.refreshAllUI();
+                UIRenderer.showToast('网页更新成功');
+            },
+            
+            // 删除网页
+            deleteWeb(id) {
+                if (!confirm('确定要删除这个网页吗？此操作不可撤销。')) {
+                    return;
+                }
+                
+                const deleted = WebStorage.deleteWeb(id);
+                if (deleted) {
+                    // 关闭模态框并刷新UI
+                    this.closeAllModals();
+                    this.refreshAllUI();
+                    UIRenderer.showToast('网页已删除');
+                }
+            },
+            
+            // 导出所有网页
+            exportAllWebs() {
+                const data = WebStorage.exportAllWebs();
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `web-collector-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                UIRenderer.showToast('导出成功');
+            },
+            
+            // 导入网页
+            importWebs() {
+                let backupData = document.getElementById('backup-code-input').value.trim(); // 统一从代码输入框获取
+                
+                if (!backupData) {
+                    UIRenderer.showToast('请上传备份文件或输入备份代码', 'error');
+                    return;
+                }
+                
+                try {
+                    const count = WebStorage.importWebs(backupData);
+                    this.closeAllModals();
+                    this.refreshAllUI();
+                    UIRenderer.showToast(`成功导入 ${count} 个网页`);
+                } catch (error) {
+                    UIRenderer.showToast('导入失败：' + error.message, 'error');
+                }
+            },
+            
+            // 打开网页
+            openWeb(id) {
+                const web = WebStorage.getWebById(id);
+                if (!web) return;
+                
+                // 创建Blob并在新标签页打开
+                const blob = new Blob([web.htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            },
+            
+            // 添加新标签
+            addNewTag(tagName) {
+                if (!tagName.trim()) {
+                    UIRenderer.showToast('请输入标签名称', 'error');
+                    return;
+                }
+                
+                const newTag = TagStorage.addTag(tagName);
+                if (newTag) {
+                    document.getElementById('new-tag-input').value = '';
+                    UIRenderer.renderAllTags(); // 刷新管理标签模态框
+                    this.refreshAllUI(); // 刷新主页标签栏和网页列表
+                    UIRenderer.showToast(`已添加标签: ${newTag.name}`);
+                } else {
+                    UIRenderer.showToast('标签已存在', 'error');
+                }
+            },
+            
+            // 删除标签
+            deleteTag(tagId) {
+                const deletedTag = TagStorage.deleteTag(tagId);
+                if (deletedTag) {
+                    // 删除标签后要检查当前筛选标签是否为被删除的标签
+                    if (this.state.activeTagId === tagId) {
+                        this.state.activeTagId = 'all'; // 切换到 '全部'
+                    }
+
+                    UIRenderer.renderAllTags(); // 刷新管理标签模态框
+                    this.refreshAllUI(); // 刷新主页标签栏和网页列表
+                    UIRenderer.showToast(`已删除标签: ${deletedTag.name}`);
+                }
+            },
+            
+            // 向添加的网页添加标签
+            addTagToWeb(tagId) {
+                if (!this.state.addWebTags.includes(tagId)) {
+                    this.state.addWebTags.push(tagId);
+                    UIRenderer.renderAddWebTags(this.state.addWebTags);
+                }
+            },
+            
+            // 从添加的网页移除标签
+            removeTagFromWeb(tagId) {
+                this.state.addWebTags = this.state.addWebTags.filter(id => id !== tagId);
+                UIRenderer.renderAddWebTags(this.state.addWebTags);
+            },
+            
+            // 向编辑的网页添加标签
+            addTagToEditWeb(tagId) {
+                if (!this.state.editWebTags.includes(tagId)) {
+                    this.state.editWebTags.push(tagId);
+                    UIRenderer.renderEditWebTags(this.state.editWebTags);
+                }
+            },
+            
+            // 从编辑的网页移除标签
+            removeTagFromEditWeb(tagId) {
+                this.state.editWebTags = this.state.editWebTags.filter(id => id !== tagId);
+                UIRenderer.renderEditWebTags(this.state.editWebTags);
+            },
+            
+            // 根据标签筛选
+            filterByTag(tagId) {
+                this.state.activeTagId = tagId;
+                this.refreshAllUI(); // 统一调用刷新
+            },
+            
+            // 更新搜索UI
+            updateSearchUI() {
+                this.refreshAllUI(); // 统一调用刷新
+            },
+            
+            // 清除搜索
+            clearSearch() {
+                document.getElementById('search-input').value = '';
+                document.getElementById('clear-search').classList.add('hidden');
+                this.state.searchTerm = '';
+                this.refreshAllUI(); // 调用统一刷新
+            },
+            
+            // 【新增 E-2】一键复制代码
+            copyCode() {
+                const codeViewArea = document.getElementById('code-view-area');
+                const codeEditInput = document.getElementById('edit-html-code-input');
+                let codeToCopy = '';
+
+                // 判断当前显示的是查看区域还是编辑区域
+                if (!document.getElementById('code-edit-area').classList.contains('hidden')) {
+                    // 显示的是编辑区域
+                    codeToCopy = codeEditInput.value;
+                } else {
+                    // 显示的是查看区域
+                    codeToCopy = codeViewArea.textContent;
+                }
+
+                if (!codeToCopy) {
+                    UIRenderer.showToast('代码区域为空', 'error');
+                    return;
+                }
+
+                // 复制逻辑
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    UIRenderer.showToast('代码已复制到剪贴板！', 'success');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    UIRenderer.showToast('代码复制失败，请手动复制。', 'error');
+                });
+            },
+
+            // 【新增 E-3】全屏打开代码
+            openFullscreenCode() {
+                const webId = document.getElementById('edit-web-id').value;
+                const web = WebStorage.getWebById(webId);
+                if (!web) return;
+
+                const isViewing = document.getElementById('code-edit-area').classList.contains('hidden');
+                
+                // 1. 设置全屏模态框标题
+                document.getElementById('fullscreen-code-title').textContent = `${web.title} - 代码 (${isViewing ? '查看' : '编辑'})`;
+
+                // 2. 同步数据和模式
+                const fullView = document.getElementById('fullscreen-code-view');
+                const fullEditArea = document.getElementById('fullscreen-code-edit');
+                const fullEditInput = document.getElementById('fullscreen-html-code-input');
+                const currentEditInput = document.getElementById('edit-html-code-input');
+                const currentViewArea = document.getElementById('code-view-area');
+
+                if (isViewing) {
+                    // 查看模式
+                    fullView.textContent = currentViewArea.textContent;
+                    fullView.classList.remove('hidden');
+                    fullEditArea.classList.add('hidden');
+                } else {
+                    // 编辑模式
+                    fullEditInput.value = currentEditInput.value;
+                    fullView.classList.add('hidden');
+                    fullEditArea.classList.remove('hidden');
+                }
+
+                // 3. 显示全屏模态框
+                document.getElementById('code-fullscreen-modal').classList.remove('hidden');
+            },
+
+            // 【新增 E-3】关闭全屏代码
+            closeFullscreenCode() {
+                const fullEditInput = document.getElementById('fullscreen-html-code-input');
+                const currentEditInput = document.getElementById('edit-html-code-input');
+                const fullEditArea = document.getElementById('fullscreen-code-edit');
+                const currentViewArea = document.getElementById('code-view-area');
+                
+                // 如果当前处于全屏编辑模式，则同步数据回主编辑框和查看区域
+                if (!fullEditArea.classList.contains('hidden')) {
+                    currentEditInput.value = fullEditInput.value;
+                    currentViewArea.textContent = fullEditInput.value; // 同步给查看区域
+                }
+                
+                document.getElementById('code-fullscreen-modal').classList.add('hidden');
+            },
+
+            // 【新增】兼容模式复制函数，用于解决 navigator.clipboard 失败的问题 (BUG 2 修复的一部分)
+            _fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+            
+                // 避免在屏幕上显示
+                textArea.style.position = "fixed";
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.width = "2em";
+                textArea.style.height = "2em";
+                textArea.style.padding = "0";
+                textArea.style.border = "none";
+                textArea.style.outline = "none";
+                textArea.style.boxShadow = "none";
+                textArea.style.background = "transparent";
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        UIRenderer.showToast('代码已复制到剪贴板！', 'success');
+                    } else {
+                        throw new Error('execCommand 复制失败');
+                    }
+                } catch (err) {
+                    console.error('兼容模式复制失败:', err);
+                    UIRenderer.showToast('代码复制失败，请手动复制。', 'error');
+                }
+
+                document.body.removeChild(textArea);
+            },
+        
+        };
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            UIManager.init();
+        });
+    </script>
+</body>
+</html>
