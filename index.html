@@ -1729,6 +1729,13 @@
             
             // 【功能 1 - 逻辑】切换批量编辑模式 (修复 BUG 3)
             toggleBulkEditMode() {
+                // 【修复 2】检查空状态
+                const totalWebs = WebStorage.getAllWebs().length;
+                if (totalWebs === 0) {
+                    UIRenderer.showToast('没有网页可供选择，请先添加网页。', 'info');
+                    return; // 阻止进入批量模式
+                }
+                
                 this.state.isBulkEditMode = !this.state.isBulkEditMode;
                 this.state.selectedWebIds = []; // 清空选中项
                 this.refreshAllUI();
@@ -2822,4 +2829,5 @@
         });
     </script>
 </body>
+
 </html>
