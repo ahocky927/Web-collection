@@ -390,19 +390,13 @@
                             <button id="edit-code-tab" class="py-2 rounded-lg w-28 bg-neutral-200 dark:bg-neutral-700">编辑代码</button>
                         </div>
                         
-                        <div class="code-controls"> 
-                            <button id="undo-code-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
-                                <i class="fa fa-undo"></i>
-                            </button>
-                            <button id="redo-code-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
-                                <i class="fa fa-repeat"></i>
-                            <button id="copy-code-btn" class="code-control-btn">
-                                <i class="fa fa-clone"></i>
-                            </button>
-                            </button>
-                            <button id="fullscreen-code-btn" class="code-control-btn">
-                                <i class="fa fa-expand"></i>
-                            </button>
+                        <div class="code-controls"> 
+                            <button id="copy-code-btn" class="code-control-btn">
+                                <i class="fa fa-clone"></i>
+                            </button>
+                            <button id="fullscreen-code-btn" class="code-control-btn">
+                                <i class="fa fa-expand"></i>
+                            </button>
                         </div>
                     </div>
                     
@@ -417,12 +411,22 @@
                     </div>
                 </div>
                 
-                <div class="flex justify-end gap-3">
-                    <button id="delete-web-btn" class="btn-secondary text-red-500">
-                        <span>删除</span>
-                    </button>
-                    <button class="close-modal btn-secondary">取消</button>
-                    <button id="update-web-btn" class="btn-primary">更新</button>
+                <div class="flex justify-between gap-3">
+                    <div class="flex gap-1">
+                        <button id="undo-code-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
+                            <i class="fa fa-undo"></i>
+                        </button>
+                        <button id="redo-code-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
+                            <i class="fa fa-repeat"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="delete-web-btn" class="btn-secondary text-red-500">
+                            <span>删除</span>
+                        </button>
+                        <button class="close-modal btn-secondary">取消</button>
+                        <button id="update-web-btn" class="btn-primary">更新</button>
+                    </div>
                 </div>
             </div>
         </div>
