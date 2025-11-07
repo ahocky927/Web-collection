@@ -91,7 +91,7 @@
             }
             .search-input-field {
                 @apply w-full py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300;
-    /* 搜索框 注意：没有 px-4 */
+                /* 搜索框 注意：没有 px-4 */
             }
             .scrollbar-hide::-webkit-scrollbar {
                 display: none;
@@ -105,7 +105,7 @@
                 @apply px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-50 text-primary dark:bg-neutral-600 dark:text-neutral-200 cursor-pointer transition-all;
             }
             .tag-active {
-                @apply bg-primary text-white;
+                @apply bg-primary dark:bg-primary opacity-90 text-white dark:text-white font-semibold;
             }
             .fullscreen-backdrop {
                 @apply fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4;
@@ -239,6 +239,7 @@
         <div class="container mx-auto flex items-center justify-between">
             <span id="bulk-selected-count" class="font-semibold">已选 0 项</span>
             <div class="flex items-center gap-3">
+                <button id="select-all-btn" class="btn-secondary bg-primary-dark text-white text-sm border-white border-opacity-30 hover:bg-opacity-80" style="min-width: 90px; text-align: center; letter-spacing: 0.25em; font-weight: 600; text-indent: 0.25em;">全选</button>
                 <button id="batch-tag-btn" class="btn-secondary bg-primary-dark text-white text-sm border-white border-opacity-30 hover:bg-opacity-80">
                     <i class="fa fa-tags"></i>
                     <span>批量标签</span>
@@ -390,13 +391,20 @@
                             <button id="edit-code-tab" class="py-2 rounded-lg w-28 bg-neutral-200 dark:bg-neutral-700">编辑代码</button>
                         </div>
                         
-                        <div class="code-controls"> 
-                            <button id="copy-code-btn" class="code-control-btn">
-                                <i class="fa fa-clone"></i>
-                            </button>
-                            <button id="fullscreen-code-btn" class="code-control-btn">
-                                <i class="fa fa-expand"></i>
-                            </button>
+                        <div class="code-controls"> 
+
+                            <button id="copy-code-btn" class="code-control-btn">
+
+                                <i class="fa fa-clone"></i>
+
+                            </button>
+
+                            <button id="fullscreen-code-btn" class="code-control-btn">
+
+                                <i class="fa fa-expand"></i>
+
+                            </button>
+
                         </div>
                     </div>
                     
@@ -411,22 +419,38 @@
                     </div>
                 </div>
                 
-                <div class="flex justify-between gap-3">
-                    <div class="flex gap-1">
-                        <button id="undo-code-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
-                            <i class="fa fa-undo"></i>
-                        </button>
-                        <button id="redo-code-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
-                            <i class="fa fa-repeat"></i>
-                        </button>
-                    </div>
-                    <div class="flex gap-3">
-                        <button id="delete-web-btn" class="btn-secondary text-red-500">
-                            <span>删除</span>
-                        </button>
-                        <button class="close-modal btn-secondary">取消</button>
-                        <button id="update-web-btn" class="btn-primary">更新</button>
-                    </div>
+                <div class="flex justify-between gap-3">
+
+                    <div class="flex gap-1">
+
+                        <button id="undo-code-btn" class="code-control-btn" title="撤销 (Ctrl+Z)">
+
+                            <i class="fa fa-undo"></i>
+
+                        </button>
+
+                        <button id="redo-code-btn" class="code-control-btn" title="恢复 (Ctrl+Y)">
+
+                            <i class="fa fa-repeat"></i>
+
+                        </button>
+
+                    </div>
+
+                    <div class="flex gap-3">
+
+                        <button id="delete-web-btn" class="btn-secondary text-red-500">
+
+                            <span>删除</span>
+
+                        </button>
+
+                        <button class="close-modal btn-secondary">取消</button>
+
+                        <button id="update-web-btn" class="btn-primary">更新</button>
+
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -497,7 +521,7 @@
                 </div>
                 
                 <div class="flex justify-end">
-                    <button class="close-modal btn-secondary">完成</button>
+                    <button class="close-modal btn-secondary dark:bg-neutral-700">完成</button>
                 </div>
             </div>
         </div>
@@ -910,6 +934,27 @@
                 return JSON.stringify(backupData, null, 2);
             },
             
+            // 导出单个网页
+            exportSingleWeb(id) {
+                const web = this.getWebById(id);
+                if (!web) return null;
+
+                // 只获取这个网页使用到的标签
+                const allTags = TagStorage.getAllTags();
+                const usedTagIds = web.tags || [];
+                const usedTags = allTags.filter(tag => usedTagIds.includes(tag.id));
+
+                const backupData = {
+                    type: 'web_collector_backup',
+                    version: '2.0',
+                    createdAt: new Date().toISOString(),
+                    items: [web], // 注意这里是一个只包含单个网页的数组
+                    tags: usedTags
+                };
+    
+                return backupData;
+            },
+
             // 导入网页
             importWebs(backupData) {
                 try {
@@ -1121,6 +1166,9 @@
                                         <button class="edit-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors flex items-center gap-2" data-id="${web.id}">
                                             <i class="fa fa-pencil"></i> 编辑
                                         </button>
+                                        <button class="export-web-btn w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors flex items-center gap-2" data-id="${web.id}">
+                                            <i class="fa fa-download"></i> 导出
+                                        </button>
                                         <button class="delete-web-btn w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-800 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2" data-id="${web.id}">
                                             <i class="fa fa-trash"></i> 删除
                                         </button>
@@ -1253,11 +1301,16 @@
                             UIManager.deleteWeb(web.id);
                             dropdown.classList.add('hidden');
                         });
+
+                        card.querySelector('.export-web-btn').addEventListener('click', () => {
+                            UIManager.exportSingleWeb(web.id);
+                            dropdown.classList.add('hidden'); // 点击后关闭下拉菜单，体验更好
+                        });
                     }
                 });
                 
                 // 【功能 1 - UI】更新批量操作栏状态
-                if (isBulkMode && UIManager.state.selectedWebIds.length > 0) {
+                if (isBulkMode) {
                     document.getElementById('bulk-selected-count').textContent = `已选 ${UIManager.state.selectedWebIds.length} 项`;
                     bulkEditBar.classList.add('active');
                 } else {
@@ -1274,6 +1327,8 @@
                     // 非批量模式: 多选列表图标
                     bulkEditBtnIcon.className = 'fa fa-list-ul text-neutral-700 dark:text-neutral-300';
                 }
+
+                if (isBulkMode) UIManager.updateSelectAllButtonState(); // 更新全选按钮状态
             },
             
             // 渲染标签筛选器 (代码不变)
@@ -1343,11 +1398,11 @@
                     const usageCount = allWebs.filter(web => web.tags && web.tags.includes(tag.id)).length;
                     
                     const tagElement = document.createElement('div');
-                    tagElement.className = 'flex items-center gap-2 bg-primary opacity-40 dark:bg-neutral-600 rounded-full px-3 py-1.5';
+                    tagElement.className = 'flex items-center gap-2 bg-primary opacity-40 dark:bg-neutral-900 rounded-full px-3 py-1.5';
                     tagElement.innerHTML = `
-                        <span class="text-sm">${tag.name}</span>
+                        <span class="text-sm text-white">${tag.name}</span>
                         <span class="text-xs bg-neutral-100 dark:bg-neutral-500 text-neutral-600 dark:text-neutral-100 rounded-full px-1.5">${usageCount}</span>
-                        <button class="delete-tag-btn text-neutral-500 dark:text-neutral-300 hover:text-red-400 dark:hover:text-red-500 transition-colors" data-id="${tag.id}">
+                        <button class="delete-tag-btn text-white dark:text-neutral-300 hover:text-red-400 dark:hover:text-red-500 transition-colors" data-id="${tag.id}">
                             <i class="fa fa-times"></i>
                         </button>
                     `;
@@ -1745,6 +1800,58 @@
                 this.refreshAllUI();
             },
 
+
+            // 全选/取消全选 可见卡片
+            toggleSelectAll() {
+                const selectAllBtn = document.getElementById('select-all-btn');
+                if (!selectAllBtn) return;
+
+                const allCards = document.querySelectorAll('#collection-list > div.bg-white'); // 更精确的选择器
+                const visibleCardIds = Array.from(allCards)
+                    .filter(card => card.offsetParent !== null)
+                    .map(card => card.dataset.id);
+
+                if (selectAllBtn.textContent === '全选') {
+                    // 将所有可见卡片的ID添加到已选列表中
+                    const newSelectedIds = new Set([...this.state.selectedWebIds, ...visibleCardIds]);
+                    this.state.selectedWebIds = Array.from(newSelectedIds);
+                } else {
+                    // 直接清空已选中的ID
+                    this.state.selectedWebIds = [];
+                }
+
+                // 刷新UI以显示高亮变化
+                this.refreshAllUI();
+            },
+
+            // 全选逻辑
+            updateSelectAllButtonState() {
+                const selectAllBtn = document.getElementById('select-all-btn');
+                if (!selectAllBtn || !this.state.isBulkEditMode) return; 
+
+                // 1. 获取所有可见的卡片
+                const allCards = document.querySelectorAll('#collection-list > div.bg-white');
+                const visibleCards = Array.from(allCards).filter(card => card.offsetParent !== null);
+
+                if (visibleCards.length === 0) {
+                    selectAllBtn.textContent = '全选'; // 如果没有可见卡片，显示“全选”
+                    return;
+                }
+
+                // 2. 检查是否所有可见卡片都已被选中
+                const allVisibleSelected = visibleCards.every(card => {
+                    const cardId = card.dataset.id;
+                    return this.state.selectedWebIds.includes(cardId);
+                });
+
+                // 3. 根据结果更新按钮文字
+                if (allVisibleSelected) {
+                    selectAllBtn.textContent = '取消全选';
+                    } else {
+                    selectAllBtn.textContent = '全选';
+                }
+            },
+
             // 【功能 1 - 逻辑】切换网页选中状态
             toggleSelectWeb(id) {
                 const index = this.state.selectedWebIds.indexOf(id);
@@ -2044,6 +2151,11 @@
                 // 【功能 1 - 交互】批量编辑按钮
                 document.getElementById('toggle-bulk-edit-btn').addEventListener('click', () => {
                     this.toggleBulkEditMode();
+                });
+
+                // 全选/取消全选按钮
+                document.getElementById('select-all-btn').addEventListener('click', () => { 
+                    this.toggleSelectAll(); 
                 });
 
                 // 【功能 1 - 增强】批量删除按钮
@@ -2688,6 +2800,33 @@
                 URL.revokeObjectURL(url);
                 
                 UIRenderer.showToast('导出成功');
+            },
+
+            // 导出单个网页
+            exportSingleWeb(id) {
+                const data = WebStorage.exportSingleWeb(id);
+                if (!data || !data.items || data.items.length === 0) {
+                    UIRenderer.showToast('无法导出该网页，未找到数据。', 'error');
+                    return;
+                }
+
+                const web = data.items[0];
+                // 将标题中的无效字符替换为下划线，以创建安全的文件名
+                const safeTitle = web.title.replace(/[\/\\?%*:|"<>]/g, '_');
+                const fileName = `web-collector-${safeTitle}.json`;
+
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+    
+                UIRenderer.showToast(`已导出: ${web.title}`, 'success');
             },
             
             // 导入网页
