@@ -10,10 +10,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- 统一的 Tailwind 配置 -->
     <style>
-     @import url("https://fontsapi.zeoseven.com/806/main/result.css");
-     </style>
+        @import url("https://fontsapi.zeoseven.com/806/main/result.css");
+    </style>
     
-     <script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -186,16 +186,13 @@
             </div>
             
             <!-- 标签筛选 -->
-            <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                <!-- 【修复 P3】为“全部”按钮添加 ID/事件绑定，并移除 tag-active 初始类，让 JS 统一管理 -->
-                <button id="all-tag-button" class="tag" data-tag="all">全部</button>
-                <div id="tags-container" class="flex items-center gap-2">
-                    <!-- 标签将通过 JavaScript 动态生成 -->
-                </div>
-                <button id="manage-tags-btn" class="tag hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400">
-                    <i class="fa fa-plus"></i> 管理标签
-                </button>
-            </div>
+<div id="tags-scroll-container" class="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+    <button id="all-tag-button" class="tag flex-shrink-0" data-tag="all">全部</button>
+    <!-- 动态标签将通过 JavaScript 精准插入到这里 -->
+    <button id="manage-tags-btn" class="tag flex-shrink-0 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 ml-auto">
+        <i class="fa fa-plus"></i> 管理标签
+    </button>
+</div>
         </div>
     </div>
 
@@ -264,8 +261,8 @@
                     <div id="batch-actions-dropdown" class="absolute right-0 bottom-full mb-2 w-40 bg-neutral-50 dark:bg-neutral-700 rounded-lg shadow-lg py-2 hidden animate-fade-in z-20">
                         <button id="batch-tag-btn-mobile" class="w-full text-left px-4 py-2 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-600 transition-colors flex items-center gap-2">
                             <i class="fa fa-tags"></i> 批量标签
-                     </button>
-                     <button id="batch-delete-btn-mobile" class="w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-800 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2">
+                        </button>
+                        <button id="batch-delete-btn-mobile" class="w-full text-left px-4 py-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-800 dark:hover:bg-opacity-20 transition-colors flex items-center gap-2">
                             <i class="fa fa-trash"></i> 批量删除
                         </button>
                     </div>
@@ -711,7 +708,7 @@
                 }
                 
                 const newTag = {
-                    id: Date.now().toString(),
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name: trimmedName, // 保存原始大小写
                     createdAt: new Date().toISOString()
                 };
@@ -981,91 +978,78 @@
             importWebs(backupData) {
                 try {
                     const data = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
-                    
-                    // 验证备份数据格式
+
                     if (data.type !== 'web_collector_backup' || !Array.isArray(data.items)) {
                         throw new Error('无效的备份数据格式');
                     }
-                    
-                    // 导入标签（如果有）
+
+                    // --- 核心修复逻辑开始 ---
+                    const allCurrentTags = TagStorage.getAllTags();
+                    const tagIdMap = {}; // 创建一个空的 ID 映射表 { oldId -> newId }
+                    let tagsImportedCount = 0;
+
+                    // 1. 智能导入标签并建立映射表
                     if (Array.isArray(data.tags)) {
-                        const existingTags = TagStorage.getAllTags().map(t => t.name.toLowerCase());
-                        let tagsImportedCount = 0;
-                        data.tags.forEach(tag => {
-                            // 尝试以原始名称添加，如果名称不存在则添加
-                            if (!existingTags.includes(tag.name.toLowerCase())) {
-                                TagStorage.addTag(tag.name);
-                                tagsImportedCount++;
+                        data.tags.forEach(tagFromFile => {
+                            // 检查本地是否已有同名标签 (忽略大小写)
+                            const existingTag = allCurrentTags.find(
+                                t => t.name.toLowerCase() === tagFromFile.name.toLowerCase()
+                            );
+
+                            if (existingTag) {
+                                // 如果已存在，则记录映射关系：文件中的旧ID -> 本地的现有ID
+                                tagIdMap[tagFromFile.id] = existingTag.id;
+                            } else {
+                                // 如果不存在，则创建新标签
+                                const newTag = TagStorage.addTag(tagFromFile.name);
+                                if (newTag) {
+                                    // 记录映射关系：文件中的旧ID -> 创建出的新ID
+                                    tagIdMap[tagFromFile.id] = newTag.id;
+                                    tagsImportedCount++;
+                                }
                             }
                         });
                     }
-                    
-                    // 保存现有数据
-                    const existingWebs = this.getAllWebs();
 
-                    
-                    // 添加新数据（避免ID冲突）
+                    // 2. 导入网页，并使用映射表来修正标签ID
+                    const existingWebs = this.getAllWebs();
                     let newWebsCount = 0;
+
                     const newWebs = data.items.map(web => {
-                        // 检查 ID 是否已存在
                         const idExists = existingWebs.some(existing => existing.id === web.id);
-                        
-                        // 【优化 3】确定新标题：如果ID冲突，则添加 "备份" 标记和备份时的更新时间
-                        const backupTimeSuffix = formatTimeForImportMark(web.updatedAt); // <-- 获取备份时间戳
+                        const backupTimeSuffix = formatTimeForImportMark(web.updatedAt);
                         const newTitle = idExists
-                            ? `${web.title} (备份: ${backupTimeSuffix})` // <-- 使用备份时间戳
+                            ? `${web.title} (备份: ${backupTimeSuffix})`
                             : web.title;
-                        
-                        // 处理标签映射（如果标签ID不存在，尝试通过名称匹配）
-                        let mappedTags = [];
-                        if (web.tags && web.tags.length) {
-                            const allTags = TagStorage.getAllTags();
-                            mappedTags = web.tags.map(tagId => {
-                                // 查找相同ID的标签
-                                let tag = allTags.find(t => t.id === tagId);
-                                
-                                // 如果没找到，尝试通过名称查找
-                                if (!tag && data.tags) {
-                                    const originalTag = data.tags.find(t => t.id === tagId);
-                                    if (originalTag) {
-                                        // 匹配标签名称（不区分大小写）
-                                        tag = allTags.find(t => t.name.toLowerCase() === originalTag.name.toLowerCase());
-                                    }
-                                }
-                                
-                                return tag ? tag.id : null;
-                            }).filter(Boolean);
-                        }
-                        
-                        // 检查网页是否重复（通过标题和内容简单判断）
-                        // 注意：这里需要使用原始标题进行去重，避免标记影响判断
-                        const isDuplicate = existingWebs.some(existing => 
+
+                        // 使用 ID 映射表来转换标签
+                        const mappedTags = (web.tags || [])
+                            .map(oldTagId => tagIdMap[oldTagId]) // 直接从映射表中查找新ID
+                            .filter(Boolean); // 过滤掉未找到的 (以防万一)
+
+                        const isDuplicate = existingWebs.some(existing =>
                             existing.title === web.title && existing.htmlContent === web.htmlContent
                         );
+                        if (isDuplicate) return null;
 
-                        if (isDuplicate) {
-                            return null; // 跳过重复项
-                        }
-                        
                         newWebsCount++;
                         return {
                             ...web,
-                            title: newTitle, // 使用新生成的标题
+                            title: newTitle,
                             id: idExists ? Date.now().toString() + Math.random().toString(36).substr(2, 9) : web.id,
-                            tags: mappedTags,
+                            tags: mappedTags, // 使用修正后的标签ID
                             importedAt: new Date().toISOString()
                         };
-                    }).filter(Boolean); // 移除跳过的重复项
-                    
-                    // 合并并保存
+                    }).filter(Boolean);
+                    // --- 核心修复逻辑结束 ---
+
                     const mergedWebs = [...existingWebs, ...newWebs];
-                    // 【优化 A 准备】错误处理
                     try {
                         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mergedWebs));
                     } catch (e) {
                         UIRenderer.showToast('导入后存储数据失败，可能空间不足或处于隐私模式。', 'error');
                     }
-                    
+
                     return newWebsCount;
                 } catch (error) {
                     console.error('导入失败:', error);
@@ -1355,48 +1339,44 @@
             
             // 渲染标签筛选器 (代码不变)
             renderTagFilters(activeTagId = 'all') {
+                const scrollContainer = document.getElementById('tags-scroll-container');
+                const manageTagsBtn = document.getElementById('manage-tags-btn');
                 const allTagButton = document.getElementById('all-tag-button');
-                const tagsContainer = document.getElementById('tags-container');
-                const allTags = TagStorage.getAllTags();
-                const allWebs = WebStorage.getAllWebs();
-                
-                // 重置所有标签按钮的激活状态
-                document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('tag-active'));
-                
-                // 激活“全部”按钮（默认状态或主动选择）
+
+                // 1. 先移除所有旧的动态标签
+                scrollContainer.querySelectorAll('.dynamic-tag').forEach(tag => tag.remove());
+    
+                // 重置“全部”按钮的激活状态
                 if (allTagButton) {
+                    allTagButton.classList.remove('tag-active');
                     if (activeTagId === 'all') {
                         allTagButton.classList.add('tag-active');
                     }
                 }
-                
-                // 获取所有被使用的标签ID
+    
+                const allTags = TagStorage.getAllTags();
+                const allWebs = WebStorage.getAllWebs();
                 const usedTagIds = TagStorage.getUsedTagIdsFromWebs(allWebs);
-                
-                // 只显示被使用的标签
                 const usedTags = allTags.filter(tag => usedTagIds.includes(tag.id));
-                
-                // 清空容器
-                tagsContainer.innerHTML = '';
-                
-                // 渲染标签
+    
+                // 2. 将新的动态标签精准插入到“管理标签”按钮之前
                 usedTags.forEach(tag => {
                     const tagElement = document.createElement('button');
-                    tagElement.className = `tag ${activeTagId === tag.id ? 'tag-active' : ''}`;
+                    tagElement.className = `tag flex-shrink-0 dynamic-tag ${activeTagId === tag.id ? 'tag-active' : ''}`;
                     tagElement.textContent = tag.name;
                     tagElement.dataset.tag = tag.id;
-                    
+        
                     tagElement.addEventListener('click', () => {
                         UIManager.filterByTag(tag.id);
                     });
-                    
-                    tagsContainer.appendChild(tagElement);
+        
+                    scrollContainer.insertBefore(tagElement, manageTagsBtn);
                 });
-                
-                // 修复：如果当前选中的标签ID无效（例如被删除了），默认回到 '全部'
+    
+                // 修复：如果当前选中的标签ID无效，默认回到 '全部'
                 if (activeTagId !== 'all' && !document.querySelector(`[data-tag="${activeTagId}"]`)) {
                     UIManager.state.activeTagId = 'all';
-                    this.renderTagFilters('all'); // 递归调用以正确设置样式
+                    this.renderTagFilters('all');
                 }
             },
             
@@ -1792,8 +1772,8 @@
             // 初始化主题
             initTheme() {
                 const isDarkMode = localStorage.getItem('dark_mode') === 'true' || 
-                                  (localStorage.getItem('dark_mode') === null && 
-                                   window.matchMedia('(prefers-color-scheme: dark)').matches);
+                                    (localStorage.getItem('dark_mode') === null && 
+                                    window.matchMedia('(prefers-color-scheme: dark)').matches);
                 
                 if (isDarkMode) {
                     document.documentElement.classList.add('dark');
@@ -2035,7 +2015,7 @@
             },
 
             // 【新增】确认应用批量标签操作
-             processBatchTags() {
+            processBatchTags() {
                 const ids = this.state.selectedWebIds;
                 const tagsToAdd = this.state.batchTagsToAdd;
                 const tagsToRemove = this.state.batchTagsToExclude;
@@ -2219,8 +2199,8 @@
                         : document.getElementById('fullscreen-html-code-input').value;
                     
                     if (!codeToCopy) {
-                         UIRenderer.showToast('代码区域为空', 'error');
-                         return;
+                        UIRenderer.showToast('代码区域为空', 'error');
+                        return;
                     }
 
                     navigator.clipboard.writeText(codeToCopy).then(() => {
@@ -2578,14 +2558,41 @@
             previewWeb(id) {
                 const web = WebStorage.getWebById(id);
                 if (!web) return;
-                
+
                 // 设置标题
                 document.getElementById('preview-web-title').textContent = web.title;
-                
-                // 设置iframe内容
+
+                // --- 核心改动开始 ---
+
+                // 1. 定义我们要注入的样式
+                const styleToInject = `
+                    <style>
+                        @import url("https://fontsapi.zeoseven.com/806/main/result.css");
+                        body {
+                            font-family: 'NanoMyongWenFangSong', sans-serif !important;
+                        }
+                    </style>
+                `;
+
+                // 2. 准备一个新的HTML内容变量
+                let finalHtmlContent = web.htmlContent;
+
+                // 3. 智能注入样式：尝试插入到 <head> 标签内部，如果找不到，就插入到 <html> 标签之后
+                if (finalHtmlContent.includes('<head>')) {
+                    finalHtmlContent = finalHtmlContent.replace('<head>', '<head>' + styleToInject);
+                } else if (finalHtmlContent.includes('<html>')) {
+                    finalHtmlContent = finalHtmlContent.replace('<html>', '<html>' + styleToInject);
+                } else {
+                    // 如果连 <html> 标签都没有，就直接加在最前面
+                    finalHtmlContent = styleToInject + finalHtmlContent;
+                }
+
+                // 4. 将处理后的HTML内容设置到iframe中
                 const iframe = document.getElementById('web-preview-iframe');
-                iframe.srcdoc = web.htmlContent;
-                
+                iframe.srcdoc = finalHtmlContent;
+    
+                // --- 核心改动结束 ---
+
                 // 显示模态框
                 document.getElementById('preview-web-modal').classList.remove('hidden');
             },
